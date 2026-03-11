@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart'; // 新增 Cupertino 供 iOS 風格載入圈圈使用
+import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SmartRehab Pro',
+      title: '智慧上肢檢測',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: const Color(0xFF0D9488),
@@ -113,8 +113,8 @@ class LoginPage extends StatelessWidget {
                 child: const Icon(Icons.monitor_heart, size: 40, color: Color(0xFFF59E0B)),
               ),
               const SizedBox(height: 16),
-              const Text('SmartRehab Pro', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-              const Text('智慧關節復健系統', style: TextStyle(fontSize: 14, letterSpacing: 2, color: Color(0xFFCCFBF1))),
+              const Text('智慧上肢檢測', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('專業關節活動度分析系統', style: TextStyle(fontSize: 14, letterSpacing: 2, color: Color(0xFFCCFBF1))),
               const SizedBox(height: 48),
 
               _buildTextField('User ID / Email', 'doctor_wang', false),
@@ -178,6 +178,49 @@ class LoginPage extends StatelessWidget {
   }
 }
 
+List<Map<String, dynamic>> _generateInitialHistory() {
+  final List<String> dates = ['1/10', '1/20', '1/30', '2/5', '2/20'];
+  final List<String> fullDates = ['2026/01/10', '2026/01/20', '2026/01/30', '2026/02/05', '2026/02/20'];
+  final List<String> exerciseNames = [
+    '1. 前平舉', '2. 側平舉', '3. 後平舉',
+    '4. 水平外展', '5. 水平內收',
+    '6. 前向肩輪', '7. 側向肩輪'
+  ];
+
+  return List.generate(5, (i) {
+    List<Map<String, dynamic>> results = exerciseNames.map((name) {
+      bool isComplex = name.contains('肩輪');
+      int baseLeft = 90 + (i * 15);
+      int baseRight = 160;
+
+      if (name.contains('後平舉')) { baseLeft = 20 + (i * 5); baseRight = 50; }
+      if (name.contains('水平')) { baseLeft = 40 + (i * 10); baseRight = 120; }
+
+      return {
+        'name': name,
+        'type': isComplex ? 'complex' : 'standard',
+        'left': [
+          {'rep': 1, 'dir': isComplex ? '順時針' : null, 'start': 0, 'end': baseLeft, 'rom': baseLeft},
+          {'rep': 2, 'dir': isComplex ? '逆時針' : null, 'start': 0, 'end': baseLeft - 5, 'rom': baseLeft - 5},
+        ],
+        'right': [
+          {'rep': 1, 'dir': isComplex ? '順時針' : null, 'start': 0, 'end': baseRight, 'rom': baseRight},
+          {'rep': 2, 'dir': isComplex ? '逆時針' : null, 'start': 0, 'end': baseRight - 2, 'rom': baseRight - 2},
+        ],
+      };
+    }).toList();
+
+    return {
+      'date': dates[i],
+      'fullDate': fullDates[i],
+      'time': '14:30',
+      'totalTime': '05:12',
+      'itemsCount': 7,
+      'results': results,
+    };
+  });
+}
+
 // ==================== 主系統容器 ====================
 class MainSystem extends StatefulWidget {
   const MainSystem({super.key});
@@ -192,36 +235,7 @@ class _MainSystemState extends State<MainSystem> {
   bool _hasReportData = false;
   Map<String, dynamic>? _reportData;
 
-  // 💡 修正警告：加入 final 修飾子
-  final List<Map<String, dynamic>> _historyRecords = [
-    {
-      'date': '1/10', 'fullDate': '2026/01/10', 'time': '09:00',
-      'rate': 45, 'totalTime': '06:30', 'itemsCount': 7, 'results': []
-    },
-    {
-      'date': '1/20', 'fullDate': '2026/01/20', 'time': '10:15',
-      'rate': 52, 'totalTime': '06:15', 'itemsCount': 7, 'results': []
-    },
-    {
-      'date': '1/30', 'fullDate': '2026/01/30', 'time': '14:20',
-      'rate': 58, 'totalTime': '05:50', 'itemsCount': 7, 'results': []
-    },
-    {
-      'date': '2/5', 'fullDate': '2026/02/05', 'time': '11:10',
-      'rate': 65, 'totalTime': '05:30', 'itemsCount': 7, 'results': []
-    },
-    {
-      'date': '2/20', 'fullDate': '2026/02/20', 'time': '14:30',
-      'rate': 85, 'totalTime': '05:12', 'itemsCount': 7,
-      'results': [
-        {'name': '1. 前平舉', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 165°)', 'rightCount': '10', 'rightMax': '(Max 160°)'},
-        {'name': '2. 側平舉', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 160°)', 'rightCount': '10', 'rightMax': '(Max 155°)'},
-        {'name': '3. 後平舉', 'type': 'standard', 'leftCount': '6', 'leftMax': '(Max 30°)', 'rightCount': '10', 'rightMax': '(Max 55°)'},
-        {'name': '4. 水平外展', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 35°)', 'rightCount': '10', 'rightMax': '(Max 40°)'},
-        {'name': '5. 水平內收', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 120°)', 'rightCount': '10', 'rightMax': '(Max 125°)'},
-      ]
-    }
-  ];
+  late final List<Map<String, dynamic>> _historyRecords = _generateInitialHistory();
 
   final List<Map<String, dynamic>> sensors = [
     {'id': 'dot1', 'name': 'Sensor_Chest', 'mac': 'D4:22:CD:00:70:EC', 'isConnected': false},
@@ -250,12 +264,10 @@ class _MainSystemState extends State<MainSystem> {
   void _saveReportToHistory(Map<String, dynamic> report) {
     final now = DateTime.now();
     setState(() {
-      // 儲存報告並附加當前時間
       _historyRecords.add({
         'date': '${now.month}/${now.day}',
         'fullDate': '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}',
         'time': '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
-        'rate': report['completionRate'],
         'totalTime': report['totalTime'],
         'itemsCount': (report['results'] as List).length,
         'results': report['results'],
@@ -277,7 +289,7 @@ class _MainSystemState extends State<MainSystem> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('SmartRehab', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const Text('智慧上肢檢測', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                 Text(_titles[_currentIndex], style: const TextStyle(fontSize: 10, color: Color(0xFFCCFBF1))),
               ],
             ),
@@ -373,14 +385,13 @@ class DashboardPage extends StatelessWidget {
     required this.onAnalysisCompleted,
   });
 
-  // 1. 顯示檔案選擇視窗 (圖一)
   void _showCSVSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return Dialog(
           backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent, // 避免 Material 3 預設的色偏
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -408,18 +419,15 @@ class DashboardPage extends StatelessWidget {
                 Text('系統近期紀錄', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
                 const SizedBox(height: 12),
 
-                // CSV 選項清單
                 _buildCSVItem(context, dialogContext, '王先生_20260301_復健紀錄.csv', '昨天 14:30 • 120 KB'),
                 _buildCSVItem(context, dialogContext, '李伯伯_20260228_術後追蹤.csv', '2026/02/28 • 105 KB'),
-                _buildCSVItem(context, dialogContext, '陳阿姨_20260225_初診評估.csv', '2026/02/25 • 118 KB'),
 
                 const SizedBox(height: 12),
 
-                // 本機瀏覽按鈕
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(dialogContext);
-                    _showLoadingAndAnalyze(context); // 一樣觸發分析流程
+                    _showLoadingAndAnalyze(context);
                   },
                   child: Container(
                     width: double.infinity,
@@ -447,12 +455,11 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  // 輔助建構 CSV 單個選項的 Widget
   Widget _buildCSVItem(BuildContext mainContext, BuildContext dialogContext, String title, String subtitle) {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(dialogContext); // 關閉選擇視窗
-        _showLoadingAndAnalyze(mainContext); // 觸發分析視窗 (使用主頁面的 context)
+        Navigator.pop(dialogContext);
+        _showLoadingAndAnalyze(mainContext);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -489,11 +496,10 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  // 2. 顯示資料分析中視窗 (圖二) 並於完成後跳轉
   void _showLoadingAndAnalyze(BuildContext context) async {
     showDialog(
       context: context,
-      barrierDismissible: false, // 禁止點擊外部關閉
+      barrierDismissible: false,
       builder: (BuildContext loadingContext) {
         return Dialog(
           backgroundColor: Colors.white,
@@ -510,10 +516,7 @@ class DashboardPage extends StatelessWidget {
                     color: const Color(0xFF0D9488).withValues(alpha: 0.05),
                     shape: BoxShape.circle,
                   ),
-                  child: const CupertinoActivityIndicator(
-                    radius: 20, // 使用 Cupertino 風格的載入圈圈以符合截圖視覺
-                    color: Color(0xFF0D9488),
-                  ),
+                  child: const CupertinoActivityIndicator(radius: 20, color: Color(0xFF0D9488)),
                 ),
                 const SizedBox(height: 24),
                 const Text('資料分析中', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
@@ -526,28 +529,35 @@ class DashboardPage extends StatelessWidget {
       },
     );
 
-    // 模擬分析過程花費 2 秒
     await Future.delayed(const Duration(seconds: 2));
-
-    // 防呆檢查：如果元件已經被卸載，就直接 return
     if (!context.mounted) return;
-
-    // 關閉 Loading 視窗
     Navigator.of(context).pop();
 
-    // 準備假資料報告
+    final List<String> exerciseNames = [
+      '1. 前平舉', '2. 側平舉', '3. 後平舉',
+      '4. 水平外展', '5. 水平內收',
+      '6. 前向肩輪', '7. 側向肩輪'
+    ];
+
+    List<Map<String, dynamic>> fakeDetailedResults = exerciseNames.map((name) {
+      bool isComplex = name.contains('肩輪');
+      return {
+        'name': name,
+        'type': isComplex ? 'complex' : 'standard',
+        'left': [
+          {'rep': 1, 'dir': isComplex ? '順時針' : null, 'start': 0, 'end': 160, 'rom': 160},
+          {'rep': 2, 'dir': isComplex ? '逆時針' : null, 'start': 0, 'end': 155, 'rom': 155},
+        ],
+        'right': [
+          {'rep': 1, 'dir': isComplex ? '順時針' : null, 'start': 0, 'end': 165, 'rom': 165},
+          {'rep': 2, 'dir': isComplex ? '逆時針' : null, 'start': 0, 'end': 160, 'rom': 160},
+        ]
+      };
+    }).toList();
+
     final fakeReport = {
       'totalTime': '05:12',
-      'completionRate': 92,
-      'results': [
-        {'name': '1. 前平舉 (Flexion)', 'type': 'standard', 'leftCount': '12', 'leftMax': '(Max 175°)', 'rightCount': '10', 'rightMax': '(Max 170°)', 'isWarning': false},
-        {'name': '2. 側平舉 (Abduction)', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 170°)', 'rightCount': '10', 'rightMax': '(Max 165°)', 'isWarning': false},
-        {'name': '3. 後平舉 (Extension)', 'type': 'standard', 'leftCount': '8', 'leftMax': '(Max 35°)', 'rightCount': '10', 'rightMax': '(Max 55°)', 'isWarning': true},
-        {'name': '4. 水平外展 (Horizontal Abd.)', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 40°)', 'rightCount': '10', 'rightMax': '(Max 45°)', 'isWarning': false},
-        {'name': '5. 水平內收 (Horizontal Add.)', 'type': 'standard', 'leftCount': '10', 'leftMax': '(Max 130°)', 'rightCount': '10', 'rightMax': '(Max 135°)', 'isWarning': false},
-        {'name': '6. 前向肩輪 (Sagittal Roll)', 'type': 'complex', 'leftFwdCount': '5', 'leftFwdMax': '(Max Elev. 160°)', 'leftBwdCount': '5', 'leftBwdMax': '(Max Elev. 155°)', 'rightFwdCount': '5', 'rightFwdMax': '(Max Elev. 165°)', 'rightBwdCount': '5', 'rightBwdMax': '(Max Elev. 170°)'},
-        {'name': '7. 側向肩輪 (Frontal Roll)', 'type': 'complex', 'leftFwdCount': '5', 'leftFwdMax': '(Max Elev. 150°)', 'leftBwdCount': '5', 'leftBwdMax': '(Max Elev. 145°)', 'rightFwdCount': '5', 'rightFwdMax': '(Max Elev. 160°)', 'rightBwdCount': '5', 'rightBwdMax': '(Max Elev. 155°)'},
-      ]
+      'results': fakeDetailedResults
     };
 
     onAnalysisCompleted(fakeReport);
@@ -602,7 +612,7 @@ class DashboardPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               GestureDetector(
-                onTap: () => _showCSVSelectionDialog(context), // 更改為觸發選擇視窗
+                onTap: () => _showCSVSelectionDialog(context),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.grey.shade300, width: 2), borderRadius: BorderRadius.circular(16)),
@@ -703,102 +713,114 @@ class RecordPage extends StatefulWidget {
 class _RecordPageState extends State<RecordPage> {
   bool isLocked = false;
   bool isRecording = false;
-  bool isCalibrating = false; // 新增：追蹤是否正在進行校正
+  bool isCalibrating = false;
+  bool hasRecordedData = false;
+  bool isExporting = false;
   int seconds = 0;
   Timer? timer;
   final PageController _pageController = PageController();
 
   final List<Map<String, dynamic>> exercises = [
-    {'name': '1. 前平舉 (Flexion)', 'checked': true, 'count': '10', 'unit': '次'},
-    {'name': '2. 側平舉 (Abduction)', 'checked': true, 'count': '10', 'unit': '次'},
-    {'name': '3. 後平舉 (Extension)', 'checked': true, 'count': '10', 'unit': '次'},
-    {'name': '4. 水平外展 (Horizontal Abd.)', 'checked': true, 'count': '10', 'unit': '次'},
-    {'name': '5. 水平內收 (Horizontal Add.)', 'checked': true, 'count': '10', 'unit': '次'},
-    {'name': '6. 前向肩輪 (Sagittal Roll)', 'checked': true, 'count': '5', 'unit': '圈'},
-    {'name': '7. 側向肩輪 (Frontal Roll)', 'checked': true, 'count': '5', 'unit': '圈'},
+    {'name': '1. 前平舉', 'checked': true, 'count': '3', 'unit': '次'},
+    {'name': '2. 側平舉', 'checked': true, 'count': '3', 'unit': '次'},
+    {'name': '3. 後平舉', 'checked': true, 'count': '3', 'unit': '次'},
+    {'name': '4. 水平外展', 'checked': true, 'count': '3', 'unit': '次'},
+    {'name': '5. 水平內收', 'checked': true, 'count': '3', 'unit': '次'},
+    {'name': '6. 前向肩輪', 'checked': true, 'count': '3', 'unit': '圈'},
+    {'name': '7. 側向肩輪', 'checked': true, 'count': '3', 'unit': '圈'},
   ];
 
-  void toggleRecord() {
+  void startRecording() {
     setState(() {
-      if (isRecording) {
-        isRecording = false;
-        timer?.cancel();
-        showTopToast(context, '資料分析中，請稍候...');
+      isRecording = true;
+      hasRecordedData = false;
+      seconds = 0;
+      timer = Timer.periodic(const Duration(seconds: 1), (t) {
+        setState(() => seconds++);
+      });
+    });
+  }
 
-        Future.delayed(const Duration(seconds: 2), () {
-          List<Map<String, dynamic>> dynamicResults = [];
-
-          for (var ex in exercises) {
-            if (ex['checked'] == true) {
-              int target = int.tryParse(ex['count'].toString()) ?? 10;
-              bool isRoll = ex['name'].toString().contains('肩輪');
-
-              if (isRoll) {
-                dynamicResults.add({
-                  'name': ex['name'].toString(),
-                  'type': 'complex',
-                  'leftFwdCount': '$target',
-                  'leftFwdMax': '(Max Elev. 160°)',
-                  'leftBwdCount': '$target',
-                  'leftBwdMax': '(Max Elev. 155°)',
-                  'rightFwdCount': '$target',
-                  'rightFwdMax': '(Max Elev. 165°)',
-                  'rightBwdCount': '$target',
-                  'rightBwdMax': '(Max Elev. 170°)',
-                });
-              } else {
-                bool isWarning = ex['name'].toString().contains('後平舉');
-                dynamicResults.add({
-                  'name': ex['name'].toString(),
-                  'type': 'standard',
-                  'leftCount': isWarning ? '${(target > 2 ? target - 2 : target)}' : '${target + 2}',
-                  'leftMax': isWarning ? '(Max 35°)' : '(Max 175°)',
-                  'rightCount': '$target',
-                  'rightMax': isWarning ? '(Max 55°)' : '(Max 170°)',
-                  'isWarning': isWarning,
-                });
-              }
-            }
-          }
-
-          final report = {
-            'totalTime': '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}',
-            'completionRate': 88,
-            'results': dynamicResults,
-          };
-
-          widget.onAnalysisCompleted(report);
-
-          setState(() {
-            isLocked = false;
-            seconds = 0;
-          });
-        });
-      } else {
-        isRecording = true;
-        seconds = 0;
-        timer = Timer.periodic(const Duration(seconds: 1), (t) {
-          setState(() => seconds++);
-        });
-      }
+  void stopRecording() {
+    setState(() {
+      isRecording = false;
+      hasRecordedData = true;
+      timer?.cancel();
+      showTopToast(context, '錄製已停止，請選擇匯出 CSV 或進行分析');
     });
   }
 
   void cancelRecord() {
     setState(() {
       isRecording = false;
+      hasRecordedData = false;
       timer?.cancel();
       seconds = 0;
-      showTopToast(context, '已放棄本次錄製');
+      showTopToast(context, '已清除本次錄製資料');
     });
   }
 
-  // 處理校正按鈕的動畫與延遲邏輯
+  void exportCSV() {
+    setState(() => isExporting = true);
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      setState(() => isExporting = false);
+      showTopToast(context, '✅ CSV 原始數據已成功下載至本機');
+    });
+  }
+
+  void performAnalysis() {
+    showTopToast(context, 'AI 資料分析中，請稍候...');
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      List<Map<String, dynamic>> dynamicResults = [];
+
+      for (var ex in exercises) {
+        if (ex['checked'] == true) {
+          int target = int.tryParse(ex['count'].toString()) ?? 3;
+          bool isRoll = ex['name'].toString().contains('肩輪');
+
+          List<Map<String, dynamic>> leftReps = [];
+          List<Map<String, dynamic>> rightReps = [];
+
+          for(int i = 1; i <= target; i++) {
+            if (isRoll) {
+              leftReps.add({'rep': i, 'dir': i % 2 == 1 ? '順時針' : '逆時針', 'start': 0, 'end': 150 + (i*2), 'rom': 150 + (i*2)});
+              rightReps.add({'rep': i, 'dir': i % 2 == 1 ? '順時針' : '逆時針', 'start': 5, 'end': 145 + (i*3), 'rom': 140 + (i*3)});
+            } else {
+              leftReps.add({'rep': i, 'start': 0, 'end': 160 + (i*2), 'rom': 160 + (i*2)});
+              rightReps.add({'rep': i, 'start': 0, 'end': 158 + (i*2), 'rom': 158 + (i*2)});
+            }
+          }
+
+          dynamicResults.add({
+            'name': ex['name'].toString(),
+            'type': isRoll ? 'complex' : 'standard',
+            'left': leftReps,
+            'right': rightReps,
+          });
+        }
+      }
+
+      final report = {
+        'totalTime': '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}',
+        'results': dynamicResults,
+      };
+
+      widget.onAnalysisCompleted(report);
+
+      setState(() {
+        isLocked = false;
+        hasRecordedData = false;
+        seconds = 0;
+      });
+    });
+  }
+
   Future<void> _handleCalibration() async {
     setState(() => isCalibrating = true);
-    // 模擬設備校正等待時間
     await Future.delayed(const Duration(milliseconds: 1200));
-
     if (!mounted) return;
     setState(() => isCalibrating = false);
     showTopToast(context, '✅ 基準點已重置 (Heading Reset)');
@@ -814,6 +836,9 @@ class _RecordPageState extends State<RecordPage> {
   @override
   Widget build(BuildContext context) {
     int connectedCount = widget.sensors.where((s) => s['isConnected'] == true).length;
+    int checkedExCount = exercises.where((ex) => ex['checked'] == true).length;
+
+    bool canAnalyze = connectedCount == 5 && checkedExCount == 7;
 
     if (connectedCount == 0) {
       return Center(
@@ -830,7 +855,7 @@ class _RecordPageState extends State<RecordPage> {
               const SizedBox(height: 24),
               const Text('未偵測到感測器', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 8),
-              const Text('請先至 Devices 頁面連線至少一個藍牙感測器，才能進行測試與波形錄製。', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+              const Text('請先至設備頁面連線至少一個藍牙感測器，才能進行測試與波形錄製。', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 32),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -862,7 +887,7 @@ class _RecordPageState extends State<RecordPage> {
                   const Text('連續動作錄製', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
-                    isLocked ? '感測器連線後，波形將自動實時顯示' : '請先確認下方自訂測試項目',
+                    isLocked ? '感測器連線後，波形將自動實時顯示' : '請先確認下方檢測項目設定',
                     style: TextStyle(fontSize: 12, color: isRecording ? const Color(0xFFF59E0B) : Colors.grey.shade600),
                   ),
                 ],
@@ -872,7 +897,10 @@ class _RecordPageState extends State<RecordPage> {
                 children: [
                   Text(
                     '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}',
-                    style: TextStyle(fontSize: 32, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: isRecording ? const Color(0xFF0D9488) : Colors.grey.shade300),
+                    style: TextStyle(
+                        fontSize: 32, fontFamily: 'monospace', fontWeight: FontWeight.bold,
+                        color: isRecording ? const Color(0xFF0D9488) : (hasRecordedData ? const Color(0xFFF59E0B) : Colors.grey.shade300)
+                    ),
                   ),
                   if (isRecording)
                     const Row(
@@ -880,6 +908,14 @@ class _RecordPageState extends State<RecordPage> {
                         Icon(Icons.fiber_manual_record, color: Colors.red, size: 12),
                         SizedBox(width: 4),
                         Text('REC', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      ],
+                    )
+                  else if (hasRecordedData)
+                    const Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Color(0xFFF59E0B), size: 12),
+                        SizedBox(width: 4),
+                        Text('錄製完成', style: TextStyle(color: Color(0xFFF59E0B), fontSize: 10, fontWeight: FontWeight.bold)),
                       ],
                     )
                 ],
@@ -903,7 +939,7 @@ class _RecordPageState extends State<RecordPage> {
                             children: [
                               Icon(Icons.tune, size: 20, color: Color(0xFF0D9488)),
                               SizedBox(width: 8),
-                              Text('自訂測試處方', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                              Text('檢測項目設定', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
                             ],
                           ),
                           Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)), child: const Text('請設定項目', style: TextStyle(fontSize: 12, color: Colors.grey)))
@@ -975,7 +1011,7 @@ class _RecordPageState extends State<RecordPage> {
                                   showTopToast(context, '設定已確認，已開啟波形預覽');
                                 },
                                 icon: const Icon(Icons.check, size: 20),
-                                label: const Text('確認處方設定', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                label: const Text('確認檢測設定', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               ),
                             )
                           ],
@@ -998,19 +1034,19 @@ class _RecordPageState extends State<RecordPage> {
                       children: [
                         Icon(Icons.tune, size: 18, color: Color(0xFF0D9488)),
                         SizedBox(width: 8),
-                        Text('自訂測試處方', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16)),
+                        Text('檢測項目設定', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 16)),
                       ],
                     ),
                     GestureDetector(
-                      onTap: isRecording ? null : () => setState(() => isLocked = false),
+                      onTap: (isRecording || hasRecordedData) ? null : () => setState(() => isLocked = false),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 14, color: isRecording ? Colors.grey : const Color(0xFF0D9488)),
+                            Icon(Icons.edit, size: 14, color: (isRecording || hasRecordedData) ? Colors.grey : const Color(0xFF0D9488)),
                             const SizedBox(width: 4),
-                            Text('重新自訂', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isRecording ? Colors.grey : const Color(0xFF0D9488))),
+                            Text('重新設定', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: (isRecording || hasRecordedData) ? Colors.grey : const Color(0xFF0D9488))),
                           ],
                         ),
                       ),
@@ -1020,67 +1056,111 @@ class _RecordPageState extends State<RecordPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  // 💡 更新：加入 isCalibrating 動態互動狀態
-                  child: OutlinedButton.icon(
+
+            if (hasRecordedData) ...[
+              if (!canAnalyze)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade100)),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Expanded(child: Text('AI 分析需連接 5 顆感測器並勾選全 7 項動作。您目前僅可匯出 CSV 原始資料。', style: TextStyle(fontSize: 12, color: Colors.red, height: 1.4))),
+                    ],
+                  ),
+                ),
+              Row(
+                children: [
+                  OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      foregroundColor: isRecording
-                          ? Colors.red
-                          : isCalibrating
-                          ? const Color(0xFF0D9488) // 校正時變為主色，加強視覺焦點
-                          : Colors.grey.shade700,
-                      side: BorderSide(
-                          color: isRecording
-                              ? Colors.red.shade200
-                              : isCalibrating
-                              ? const Color(0xFF0D9488) // 外框變為主色
-                              : Colors.grey.shade300
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      foregroundColor: Colors.red,
+                      side: BorderSide(color: Colors.red.shade200),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: cancelRecord,
+                    child: const Icon(Icons.delete_outline, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        foregroundColor: const Color(0xFF0D9488),
+                        side: const BorderSide(color: Color(0xFF0D9488)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: isRecording
-                        ? cancelRecord
-                        : isCalibrating // 如果正在校正中，按鈕禁用(null)防止連點
-                        ? null
-                        : _handleCalibration, // 觸發校正動畫邏輯
-                    icon: isRecording
-                        ? const Icon(Icons.cancel, size: 20)
-                        : isCalibrating
-                        ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488))
-                    ) // 校正中顯示旋轉圈圈
-                        : const Icon(Icons.my_location, size: 20),
-                    label: Text(
-                        isRecording
-                            ? '放棄重錄'
-                            : isCalibrating
-                            ? '校正中...' // 校正中更改文字
-                            : '歸零校正',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)
+                      onPressed: isExporting ? null : exportCSV,
+                      icon: isExporting
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)))
+                          : const Icon(Icons.download, size: 18),
+                      label: Text(isExporting ? '匯出中...' : '匯出 CSV', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: isRecording ? Colors.grey.shade800 : const Color(0xFFF59E0B),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: canAnalyze ? const Color(0xFF0D9488) : Colors.grey.shade400,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: canAnalyze ? performAnalysis : () => showTopToast(context, '❌ 未達 AI 分析條件，僅可匯出資料'),
+                      icon: const Icon(Icons.analytics, size: 18),
+                      label: const Text('進行分析', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
-                    onPressed: toggleRecord,
-                    icon: Icon(isRecording ? Icons.stop_rounded : Icons.play_circle_fill, size: 20),
-                    label: Text(isRecording ? '停止分析' : '開始錄製', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        foregroundColor: isRecording ? Colors.red : (isCalibrating ? const Color(0xFF0D9488) : Colors.grey.shade700),
+                        side: BorderSide(color: isRecording ? Colors.red.shade200 : (isCalibrating ? const Color(0xFF0D9488) : Colors.grey.shade300)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: isRecording
+                          ? cancelRecord
+                          : isCalibrating
+                          ? null
+                          : _handleCalibration,
+                      icon: isRecording
+                          ? const Icon(Icons.cancel, size: 20)
+                          : isCalibrating
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)))
+                          : const Icon(Icons.my_location, size: 20),
+                      label: Text(
+                          isRecording ? '放棄錄製' : (isCalibrating ? '校正中...' : '歸零校正'),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: isRecording ? Colors.red : const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: isRecording ? stopRecording : startRecording,
+                      icon: Icon(isRecording ? Icons.stop_rounded : Icons.play_circle_fill, size: 20),
+                      label: Text(isRecording ? '停止錄製' : '開始錄製', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 16),
             Expanded(
               child: Column(
@@ -1124,7 +1204,7 @@ class _RecordPageState extends State<RecordPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text('Gyroscope (deg/s)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                        Expanded(child: AnimatedWaveChart(isActive: isRecording && isConnected, isGyro: true)),
+                                        Expanded(child: AnimatedWaveChart(isActive: isConnected, isGyro: true)),
                                       ],
                                     ),
                                   ),
@@ -1139,7 +1219,7 @@ class _RecordPageState extends State<RecordPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text('Acceleration (m/s²)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                        Expanded(child: AnimatedWaveChart(isActive: isRecording && isConnected, isGyro: false)),
+                                        Expanded(child: AnimatedWaveChart(isActive: isConnected, isGyro: false)),
                                       ],
                                     ),
                                   ),
@@ -1265,7 +1345,125 @@ class WavePainter extends CustomPainter {
   bool shouldRepaint(covariant WavePainter oldDelegate) => phase != oldDelegate.phase || isActive != oldDelegate.isActive;
 }
 
-// ==================== 頁面 3：Analysis (分析報告 - 動態生成版) ====================
+// ==================== 左右平均活動度長條圖 (可共用) ====================
+class RomComparisonChart extends StatelessWidget {
+  final List<dynamic> results;
+
+  const RomComparisonChart({super.key, required this.results});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFF0D9488), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 6),
+              const Text('左側', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(width: 16),
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 6),
+              const Text('右側', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const Spacer(),
+              const Text('最大 180°', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...results.map((res) {
+            List leftReps = res['left'] as List? ?? [];
+            List rightReps = res['right'] as List? ?? [];
+
+            double leftAvgRom = leftReps.isEmpty ? 0 : (leftReps.fold(0, (sum, item) => sum + ((item['rom'] ?? 0) as int)) / leftReps.length);
+            double rightAvgRom = rightReps.isEmpty ? 0 : (rightReps.fold(0, (sum, item) => sum + ((item['rom'] ?? 0) as int)) / rightReps.length);
+
+            // 長條圖寬度比例 (最大值設為180)
+            double leftWidthFactor = (leftAvgRom / 180.0).clamp(0.0, 1.0);
+            double rightWidthFactor = (rightAvgRom / 180.0).clamp(0.0, 1.0);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(res['name'] ?? '未知動作', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 8),
+
+                  // 左側長條
+                  Row(
+                    children: [
+                      const SizedBox(width: 24, child: Text('左', style: TextStyle(fontSize: 11, color: Colors.grey))),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                Container(height: 14, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4))),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 800),
+                                  curve: Curves.easeOutCubic,
+                                  height: 14,
+                                  width: constraints.maxWidth * leftWidthFactor,
+                                  decoration: BoxDecoration(color: const Color(0xFF0D9488), borderRadius: BorderRadius.circular(4)),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(width: 32, child: Text('${leftAvgRom.round()}°', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)))),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+
+                  // 右側長條
+                  Row(
+                    children: [
+                      const SizedBox(width: 24, child: Text('右', style: TextStyle(fontSize: 11, color: Colors.grey))),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                Container(height: 14, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4))),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 800),
+                                  curve: Curves.easeOutCubic,
+                                  height: 14,
+                                  width: constraints.maxWidth * rightWidthFactor,
+                                  decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(4)),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(width: 32, child: Text('${rightAvgRom.round()}°', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B)))),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== 頁面 3：Analysis (分析報告 - 純粹客觀數據版) ====================
 class AnalysisPage extends StatefulWidget {
   final bool hasData;
   final Map<String, dynamic>? reportData;
@@ -1285,17 +1483,7 @@ class AnalysisPage extends StatefulWidget {
 }
 
 class _AnalysisPageState extends State<AnalysisPage> {
-  bool isExporting = false;
   bool isSaving = false;
-
-  void _exportCSV() {
-    setState(() => isExporting = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => isExporting = false);
-      showTopToast(context, 'CSV 原始數據已下載至本機');
-    });
-  }
 
   void _saveReport() {
     setState(() => isSaving = true);
@@ -1349,11 +1537,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
     final report = widget.reportData!;
     final results = report['results'] as List<Map<String, dynamic>>;
-    final compRate = report['completionRate'];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // 頂部報告資訊
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -1418,287 +1606,120 @@ class _AnalysisPageState extends State<AnalysisPage> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
 
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('整體動作完成度', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                    const SizedBox(height: 4),
-                    const Text('基於設定目標與感測器分析', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text('$compRate', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
-                        const SizedBox(width: 4),
-                        Text('%', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0D9488).withValues(alpha: 0.7))),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 90,
-                height: 90,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 90,
-                      height: 90,
-                      child: CircularProgressIndicator(
-                        value: (compRate as num) / 100.0,
-                        strokeWidth: 12,
-                        backgroundColor: Colors.grey.shade200,
-                        color: const Color(0xFF0D9488),
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 24),
 
-        const Text('詳細動作數據分析', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+        const Text('本次數據分析總覽 (左右平均幅度)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+        const SizedBox(height: 12),
+        RomComparisonChart(results: results),
+
+        const SizedBox(height: 24),
+        const Text('每下動作詳細解析', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
         const SizedBox(height: 12),
 
-        // 迴圈動態產出每一項動作資料
-        ...results.map((res) {
-          if (res['type'] == 'standard') {
-            return _buildStandardStatItem(
-                res['name']?.toString() ?? '',
-                res['leftCount']?.toString() ?? '',
-                res['leftMax']?.toString() ?? '',
-                res['rightCount']?.toString() ?? '',
-                res['rightMax']?.toString() ?? '',
-                res['isWarning'] == true
-            );
-          } else {
-            return _buildComplexStatItem(
-                res['name']?.toString() ?? '',
-                res['leftFwdCount']?.toString() ?? '',
-                res['leftFwdMax']?.toString() ?? '',
-                res['leftBwdCount']?.toString() ?? '',
-                res['leftBwdMax']?.toString() ?? '',
-                res['rightFwdCount']?.toString() ?? '',
-                res['rightFwdMax']?.toString() ?? '',
-                res['rightBwdCount']?.toString() ?? '',
-                res['rightBwdMax']?.toString() ?? ''
-            );
-          }
-        }).toList(),
+        ...results.map((res) => _buildActionDetailCard(res)),
 
         const SizedBox(height: 16),
 
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  foregroundColor: const Color(0xFF0D9488),
-                  side: const BorderSide(color: Color(0xFF0D9488), width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: isExporting ? null : _exportCSV,
-                icon: isExporting
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)))
-                    : const Icon(Icons.download, size: 20),
-                label: Text(isExporting ? '處理中' : '匯出 CSV', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: const Color(0xFF0D9488),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 1,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: const Color(0xFF0D9488),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: isSaving ? null : _saveReport,
-                icon: isSaving
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.save, size: 20),
-                label: Text(isSaving ? '儲存中' : '儲存本次報告', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
-            ),
-          ],
+            onPressed: isSaving ? null : _saveReport,
+            icon: isSaving
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.save, size: 20),
+            label: Text(isSaving ? '儲存中' : '儲存本次報告', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          ),
         ),
         const SizedBox(height: 24),
       ],
     );
   }
 
-  // 完美防呆排版：Standard 動作項目 (已修正渲染崩潰問題)
-  Widget _buildStandardStatItem(String title, String lCount, String lMax, String rCount, String rMax, bool isWarning) {
-    // 💡 解法：將 Border 與 BorderRadius 拆解成兩層。
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isWarning ? Colors.orange.shade50 : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: isWarning ? Colors.orange.shade100 : Colors.grey.shade200,
-            width: 1
-        ),
-      ),
-      clipBehavior: Clip.hardEdge, // 確保內層的色條不會超出外層的圓角
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(
-                color: isWarning ? const Color(0xFFF59E0B) : const Color(0xFF0D9488),
-                width: 4
-            ),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87))),
-                if (isWarning)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: Colors.orange.shade100, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade200)),
-                    child: const Text('💪 需調整', style: TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.bold)),
-                  )
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildSimpleStatRow('左側：', lCount, lMax, isWarning: isWarning)),
-                const SizedBox(width: 8),
-                Expanded(child: _buildSimpleStatRow('右側：', rCount, rMax)),
-              ],
-            ),
-            if (isWarning) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
-                child: const Text('左側次數未達標。註：後平舉人體極限約為60度。', style: TextStyle(fontSize: 11, color: Color(0xFFD97706))),
-              )
-            ]
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildActionDetailCard(Map<String, dynamic> data) {
+    List leftReps = data['left'] as List? ?? [];
+    List rightReps = data['right'] as List? ?? [];
 
-  // 完美防呆排版：Complex (肩輪) 動作項目 (同步套用修正方案)
-  Widget _buildComplexStatItem(String title, String lFwdCount, String lFwdMax, String lBwdCount, String lBwdMax, String rFwdCount, String rFwdMax, String rBwdCount, String rBwdMax) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: Colors.grey.shade200,
-            width: 1
-        ),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       clipBehavior: Clip.hardEdge,
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(
-          border: Border(
-            left: BorderSide(color: Color(0xFF14B8A6), width: 4),
-          ),
+          border: Border(left: BorderSide(color: Color(0xFF0D9488), width: 4)),
         ),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(width: 45, child: Text('左側：', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14))),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildComplexStatRow('順時針', lFwdCount, lFwdMax),
-                      const SizedBox(height: 6),
-                      _buildComplexStatRow('逆時針', lBwdCount, lBwdMax, isSecondary: true),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            Text(data['name'] ?? '未知動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1)),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(width: 45, child: Text('右側：', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14))),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildComplexStatRow('順時針', rFwdCount, rFwdMax),
-                      const SizedBox(height: 6),
-                      _buildComplexStatRow('逆時針', rBwdCount, rBwdMax, isSecondary: true),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+
+            _buildSideRepList('左側', leftReps, isComplex: data['type'] == 'complex'),
+            const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(height: 1, color: Colors.black12)),
+            _buildSideRepList('右側', rightReps, isComplex: data['type'] == 'complex'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSimpleStatRow(String label, String count, String maxVal, {bool isWarning = false}) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
+  Widget _buildSideRepList(String sideTitle, List reps, {required bool isComplex}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        Text(count, style: TextStyle(color: isWarning ? Colors.red : Colors.black87, fontWeight: FontWeight.bold, fontSize: 14)),
-        const Text('次 ', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 12)),
-        Text(maxVal, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-      ],
-    );
-  }
-
-  Widget _buildComplexStatRow(String dir, String count, String maxVal, {bool isSecondary = false}) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 4,
-      children: [
-        SizedBox(width: 45, child: Text(dir, style: const TextStyle(color: Colors.grey, fontSize: 12))),
-        Text(count, style: TextStyle(color: isSecondary ? const Color(0xFF0F766E) : const Color(0xFF0D9488), fontWeight: FontWeight.bold, fontSize: 14)),
-        Text('圈', style: TextStyle(color: isSecondary ? const Color(0xFF0F766E) : const Color(0xFF0D9488), fontSize: 12, fontWeight: FontWeight.bold)),
-        const SizedBox(width: 4),
-        Text(maxVal, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.accessibility_new, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Text(sideTitle, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 14)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
+              child: Text('共 ${reps.length} 次', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            )
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (reps.isEmpty)
+          const Text('無資料', style: TextStyle(color: Colors.grey, fontSize: 13))
+        else
+          ...reps.map((repData) {
+            String dirText = isComplex && repData['dir'] != null ? ' (${repData['dir']})' : '';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: Text('第 ${repData['rep']} 次$dirText', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                  ),
+                  Expanded(
+                    child: Text('${repData['start']}°  ➔  ${repData['end']}°', style: const TextStyle(fontSize: 13, color: Colors.black87, fontFamily: 'monospace')),
+                  ),
+                  Text('幅度 ${repData['rom']}°', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
@@ -1717,10 +1738,16 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   final ScrollController _chartScrollController = ScrollController();
 
+  String _selectedExerciseName = '1. 前平舉';
+
+  final TextEditingController _yearController = TextEditingController();
+  final TextEditingController _monthController = TextEditingController();
+
+  double? _touchedX;
+
   @override
   void initState() {
     super.initState();
-    // 畫面渲染完成後，自動將圖表滑動到最右側 (最新的紀錄)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_chartScrollController.hasClients) {
         _chartScrollController.jumpTo(_chartScrollController.position.maxScrollExtent);
@@ -1731,14 +1758,32 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void dispose() {
     _chartScrollController.dispose();
+    _yearController.dispose();
+    _monthController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 計算圖表需要的總寬度 (每筆資料預設間距 70，最低不小於螢幕寬度)
     double screenWidth = MediaQuery.of(context).size.width;
-    double chartDynamicWidth = math.max(screenWidth - 72, widget.historyRecords.length * 70.0);
+    double chartDynamicWidth = math.max(screenWidth - 72 - 35, widget.historyRecords.length * 70.0);
+
+    String inputYear = _yearController.text.trim();
+    String inputMonth = _monthController.text.trim();
+
+    if (inputMonth.length == 1 && int.tryParse(inputMonth) != null) {
+      inputMonth = '0$inputMonth';
+    }
+
+    List<Map<String, dynamic>> displayRecords = widget.historyRecords.reversed.where((record) {
+      String recordYear = record['fullDate'].substring(0, 4);
+      String recordMonth = record['fullDate'].substring(5, 7);
+
+      bool matchYear = inputYear.isEmpty || recordYear == inputYear;
+      bool matchMonth = inputMonth.isEmpty || recordMonth == inputMonth;
+
+      return matchYear && matchMonth;
+    }).toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1746,13 +1791,12 @@ class _HistoryPageState extends State<HistoryPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('歷史紀錄 (History)', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            const Text('歷史紀錄', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
             const Text('王先生', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
           ],
         ),
         const SizedBox(height: 24),
 
-        // 趨勢圖卡片
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -1770,7 +1814,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     children: [
                       Icon(Icons.trending_up, color: Color(0xFF0D9488), size: 20),
                       SizedBox(width: 8),
-                      Text('整體完成度趨勢', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('單項動作角度趨勢', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   Container(
@@ -1778,41 +1822,200 @@ class _HistoryPageState extends State<HistoryPage> {
                     decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
                     child: const Row(
                       children: [
-                        Icon(Icons.swap_horiz, size: 12, color: Colors.grey),
+                        Icon(Icons.touch_app, size: 12, color: Colors.grey),
                         SizedBox(width: 4),
-                        Text('左右滑動', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                        Text('點擊顯示數值', style: TextStyle(fontSize: 10, color: Colors.grey)),
                       ],
                     ),
                   )
                 ],
               ),
-              const SizedBox(height: 4),
-              const Text('觀察復健目標的達成率變化', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
-              // 加入水平滑動功能
-              SizedBox(
-                height: 150,
+              Container(
                 width: double.infinity,
-                child: SingleChildScrollView(
-                  controller: _chartScrollController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(), // 加入 iOS 風格的回彈效果
-                  child: SizedBox(
-                    width: chartDynamicWidth,
-                    child: CustomPaint(
-                      painter: HistoryChartPainter(records: widget.historyRecords),
-                    ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedExerciseName,
+                    isExpanded: true,
+                    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF0D9488)),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedExerciseName = newValue;
+                          _touchedX = null;
+                        });
+                      }
+                    },
+                    items: <String>[
+                      '1. 前平舉',
+                      '2. 側平舉',
+                      '3. 後平舉',
+                      '4. 水平外展',
+                      '5. 水平內收',
+                      '6. 前向肩輪',
+                      '7. 側向肩輪',
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF0D9488), shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  const Text('左側', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(width: 16),
+                  Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFF59E0B), shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  const Text('右側', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              SizedBox(
+                height: 160,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: YAxisAndGridPainter(),
+                      ),
+                    ),
+                    Positioned.fill(
+                      left: 35,
+                      child: SingleChildScrollView(
+                        controller: _chartScrollController,
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: SizedBox(
+                          width: chartDynamicWidth,
+                          child: GestureDetector(
+                            onTapDown: (details) {
+                              setState(() {
+                                _touchedX = details.localPosition.dx;
+                              });
+                            },
+                            child: CustomPaint(
+                              painter: ExerciseTrendChartPainter(
+                                records: widget.historyRecords,
+                                exerciseName: _selectedExerciseName,
+                                touchX: _touchedX,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
-        // 紀錄列表 (反轉順序讓最新的在最上面)
-        ...widget.historyRecords.reversed.map((record) => _buildRecordCard(context, record)).toList(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('詳細歷史紀錄', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+            Row(
+              children: [
+                Container(
+                  width: 55,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextField(
+                    controller: _yearController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: '年',
+                      hintStyle: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.normal),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (val) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Text('/', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 4),
+
+                Container(
+                  width: 40,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: TextField(
+                    controller: _monthController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: '月',
+                      hintStyle: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.normal),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (val) => setState(() {}),
+                  ),
+                ),
+                if (inputYear.isNotEmpty || inputMonth.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () {
+                      _yearController.clear();
+                      _monthController.clear();
+                      setState(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle),
+                      child: const Icon(Icons.close, size: 12, color: Colors.black54),
+                    ),
+                  )
+                ]
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (displayRecords.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(child: Text('查無符合此時間的紀錄', style: TextStyle(color: Colors.grey))),
+          )
+        else
+          ...displayRecords.map((record) => _buildRecordCard(context, record)),
       ],
     );
   }
@@ -1850,8 +2053,8 @@ class _HistoryPageState extends State<HistoryPage> {
                   const Text('王先生的復健紀錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                    child: Text('完成度 ${record['rate']}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                    decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(12)),
+                    child: const Text('已紀錄', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
                   )
                 ],
               ),
@@ -1889,7 +2092,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       children: [
                         const Text('紀錄項目', style: TextStyle(fontSize: 12, color: Colors.grey)),
                         const SizedBox(height: 4),
-                        Text('${record['itemsCount']}項完整', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                        Text('${record['itemsCount']}項動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                       ],
                     ),
                   ),
@@ -1905,100 +2108,191 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 }
 
-// ==================== 自訂繪圖：歷史趨勢圖 (Custom Chart Painter) ====================
-class HistoryChartPainter extends CustomPainter {
-  final List<Map<String, dynamic>> records;
+class _ChartPointData {
+  final double x;
+  final double leftY;
+  final double rightY;
+  final double leftRom;
+  final double rightRom;
+  final String date;
 
-  HistoryChartPainter({required this.records});
+  _ChartPointData({
+    required this.x, required this.leftY, required this.rightY,
+    required this.leftRom, required this.rightRom, required this.date,
+  });
+}
+
+class ExerciseTrendChartPainter extends CustomPainter {
+  final List<Map<String, dynamic>> records;
+  final String exerciseName;
+  final double? touchX;
+
+  ExerciseTrendChartPainter({required this.records, required this.exerciseName, this.touchX});
 
   @override
   void paint(Canvas canvas, Size size) {
     if (records.isEmpty) return;
 
-    final paintGrid = Paint()..color = Colors.grey.shade200..strokeWidth = 1;
-    final paintLine = Paint()..color = const Color(0xFF0D9488)..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
+    final paintLeftLine = Paint()..color = const Color(0xFF0D9488)..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
+    final paintRightLine = Paint()..color = const Color(0xFFF59E0B)..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
     final paintDotFill = Paint()..color = Colors.white..style = PaintingStyle.fill;
-    final paintDotStroke = Paint()..color = const Color(0xFF0D9488)..strokeWidth = 3..style = PaintingStyle.stroke;
+    final paintLeftStroke = Paint()..color = const Color(0xFF0D9488)..strokeWidth = 3..style = PaintingStyle.stroke;
+    final paintRightStroke = Paint()..color = const Color(0xFFF59E0B)..strokeWidth = 3..style = PaintingStyle.stroke;
 
-    // 繪製背景格線和 Y 軸文字
-    List<int> yLabels = [100, 85, 70, 55, 40];
     double topPadding = 10;
     double bottomPadding = 30;
-    double leftPadding = 30;
     double chartHeight = size.height - topPadding - bottomPadding;
-    double chartWidth = size.width - leftPadding - 20; // 減去 20 給右邊留一點邊距
+
+    double horizontalPadding = 20.0;
+    double usableWidth = size.width - (horizontalPadding * 2);
+
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    double stepX = usableWidth / (records.length > 1 ? records.length - 1 : 1);
+
+    List<Offset> leftPoints = [];
+    List<Offset> rightPoints = [];
+    List<_ChartPointData> pointDataList = [];
+
+    for (int i = 0; i < records.length; i++) {
+      double x = horizontalPadding + (records.length == 1 ? usableWidth / 2 : i * stepX);
+
+      List resList = records[i]['results'] as List? ?? [];
+      Map<String, dynamic>? targetExercise;
+
+      for (var ex in resList) {
+        if (ex['name'] == exerciseName) {
+          targetExercise = ex;
+          break;
+        }
+      }
+
+      double leftRom = 0;
+      double rightRom = 0;
+
+      if (targetExercise != null) {
+        List leftReps = targetExercise['left'] as List? ?? [];
+        List rightReps = targetExercise['right'] as List? ?? [];
+
+        if (leftReps.isNotEmpty) {
+          leftRom = leftReps.fold(0, (sum, item) => sum + ((item['rom'] ?? 0) as int)) / leftReps.length;
+        }
+        if (rightReps.isNotEmpty) {
+          rightRom = rightReps.fold(0, (sum, item) => sum + ((item['rom'] ?? 0) as int)) / rightReps.length;
+        }
+      }
+
+      double normalizedLeftY = 1.0 - ((leftRom - 0) / (180 - 0)).clamp(0.0, 1.0);
+      double normalizedRightY = 1.0 - ((rightRom - 0) / (180 - 0)).clamp(0.0, 1.0);
+
+      double finalLeftY = topPadding + normalizedLeftY * chartHeight;
+      double finalRightY = topPadding + normalizedRightY * chartHeight;
+
+      leftPoints.add(Offset(x, finalLeftY));
+      rightPoints.add(Offset(x, finalRightY));
+
+      pointDataList.add(_ChartPointData(
+          x: x, leftY: finalLeftY, rightY: finalRightY,
+          leftRom: leftRom, rightRom: rightRom, date: records[i]['date']
+      ));
+
+      textPainter.text = TextSpan(text: records[i]['date'], style: const TextStyle(color: Colors.grey, fontSize: 10));
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - 15));
+    }
+
+    if (rightPoints.length > 1) {
+      final pathLine = Path()..moveTo(rightPoints.first.dx, rightPoints.first.dy);
+      for (int i = 1; i < rightPoints.length; i++) {
+        pathLine.lineTo(rightPoints[i].dx, rightPoints[i].dy);
+      }
+      canvas.drawPath(pathLine, paintRightLine);
+    }
+
+    if (leftPoints.length > 1) {
+      final pathLine = Path()..moveTo(leftPoints.first.dx, leftPoints.first.dy);
+      for (int i = 1; i < leftPoints.length; i++) {
+        pathLine.lineTo(leftPoints[i].dx, leftPoints[i].dy);
+      }
+      canvas.drawPath(pathLine, paintLeftLine);
+    }
+
+    for (var p in rightPoints) {
+      canvas.drawCircle(p, 4, paintDotFill);
+      canvas.drawCircle(p, 4, paintRightStroke);
+    }
+    for (var p in leftPoints) {
+      canvas.drawCircle(p, 4, paintDotFill);
+      canvas.drawCircle(p, 4, paintLeftStroke);
+    }
+
+    if (touchX != null && pointDataList.isNotEmpty) {
+      var nearestPoint = pointDataList.reduce((a, b) => (a.x - touchX!).abs() < (b.x - touchX!).abs() ? a : b);
+
+      if ((nearestPoint.x - touchX!).abs() < 40) {
+        final linePaint = Paint()..color = Colors.grey.withValues(alpha: 0.5)..strokeWidth = 1;
+        canvas.drawLine(Offset(nearestPoint.x, topPadding), Offset(nearestPoint.x, size.height - bottomPadding), linePaint);
+
+        canvas.drawCircle(Offset(nearestPoint.x, nearestPoint.leftY), 6, Paint()..color = const Color(0xFF0D9488));
+        canvas.drawCircle(Offset(nearestPoint.x, nearestPoint.rightY), 6, Paint()..color = const Color(0xFFF59E0B));
+
+        final tpDate = TextPainter(text: TextSpan(text: nearestPoint.date, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)), textDirection: TextDirection.ltr)..layout();
+        final tpLeft = TextPainter(text: TextSpan(text: '左側: ${nearestPoint.leftRom.round()}°', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)), textDirection: TextDirection.ltr)..layout();
+        final tpRight = TextPainter(text: TextSpan(text: '右側: ${nearestPoint.rightRom.round()}°', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)), textDirection: TextDirection.ltr)..layout();
+
+        double boxWidth = math.max(tpDate.width, math.max(tpLeft.width, tpRight.width)) + 24;
+        double boxHeight = tpDate.height + tpLeft.height + tpRight.height + 20;
+
+        double boxX = nearestPoint.x + 12;
+        if (boxX + boxWidth > size.width) {
+          boxX = nearestPoint.x - boxWidth - 12;
+        }
+        double boxY = math.min(nearestPoint.leftY, nearestPoint.rightY) - 20;
+        if (boxY < topPadding) boxY = topPadding;
+
+        final bgRect = RRect.fromRectAndRadius(Rect.fromLTWH(boxX, boxY, boxWidth, boxHeight), const Radius.circular(8));
+        canvas.drawRRect(bgRect, Paint()..color = Colors.black87.withValues(alpha: 0.85));
+
+        tpDate.paint(canvas, Offset(boxX + 12, boxY + 8));
+        tpLeft.paint(canvas, Offset(boxX + 12, boxY + 8 + tpDate.height + 2));
+        tpRight.paint(canvas, Offset(boxX + 12, boxY + 8 + tpDate.height + tpLeft.height + 4));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ExerciseTrendChartPainter oldDelegate) {
+    return oldDelegate.exerciseName != exerciseName ||
+        oldDelegate.records.length != records.length ||
+        oldDelegate.touchX != touchX;
+  }
+}
+
+class YAxisAndGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paintGrid = Paint()..color = Colors.grey.shade200..strokeWidth = 1;
+    List<int> yLabels = [180, 135, 90, 45, 0];
+    double topPadding = 10;
+    double bottomPadding = 30;
+    double leftPadding = 35;
+    double chartHeight = size.height - topPadding - bottomPadding;
 
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     for (int i = 0; i < yLabels.length; i++) {
       double y = topPadding + (i * chartHeight / (yLabels.length - 1));
+
       canvas.drawLine(Offset(leftPadding, y), Offset(size.width, y), paintGrid);
 
-      textPainter.text = TextSpan(text: yLabels[i].toString(), style: const TextStyle(color: Colors.grey, fontSize: 10));
+      textPainter.text = TextSpan(text: '${yLabels[i]}°', style: const TextStyle(color: Colors.grey, fontSize: 10));
       textPainter.layout();
       textPainter.paint(canvas, Offset(0, y - 6));
-    }
-
-    // 將原本限制 5 筆的邏輯移除，改為顯示所有歷史紀錄
-    final displayRecords = records;
-    if (displayRecords.isEmpty) return;
-
-    double stepX = chartWidth / (displayRecords.length > 1 ? displayRecords.length - 1 : 1);
-    List<Offset> points = [];
-
-    for (int i = 0; i < displayRecords.length; i++) {
-      double x = leftPadding + (i * stepX);
-      // 映射 Y 軸，40 對應 bottom，100 對應 top
-      double rate = (displayRecords[i]['rate'] as num).toDouble();
-      double normalizedY = 1.0 - ((rate - 40) / (100 - 40)).clamp(0.0, 1.0);
-      double y = topPadding + normalizedY * chartHeight;
-      points.add(Offset(x, y));
-
-      // 繪製 X 軸文字
-      textPainter.text = TextSpan(text: displayRecords[i]['date'], style: const TextStyle(color: Colors.grey, fontSize: 10));
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - 15));
-    }
-
-    // 繪製漸層填色
-    if (points.length > 1) {
-      final path = Path();
-      path.moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        path.lineTo(points[i].dx, points[i].dy);
-      }
-      path.lineTo(points.last.dx, topPadding + chartHeight);
-      path.lineTo(points.first.dx, topPadding + chartHeight);
-      path.close();
-
-      final gradient = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [const Color(0xFF0D9488).withValues(alpha: 0.2), const Color(0xFF0D9488).withValues(alpha: 0.0)],
-      );
-      final paintFill = Paint()..shader = gradient.createShader(Rect.fromLTRB(leftPadding, topPadding, size.width, topPadding + chartHeight));
-      canvas.drawPath(path, paintFill);
-    }
-
-    // 繪製趨勢線
-    if (points.length > 1) {
-      final pathLine = Path();
-      pathLine.moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        pathLine.lineTo(points[i].dx, points[i].dy);
-      }
-      canvas.drawPath(pathLine, paintLine);
-    }
-
-    // 繪製節點圓圈
-    for (var p in points) {
-      canvas.drawCircle(p, 5, paintDotFill);
-      canvas.drawCircle(p, 5, paintDotStroke);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ==================== 頁面 5：Record Detail (紀錄詳情獨立頁面) ====================
@@ -2026,7 +2320,7 @@ class RecordDetailPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           padding: const EdgeInsets.only(left: 8),
         ),
-        leadingWidth: 80, // AppBar 本身用 leadingWidth 就可以控制寬度了
+        leadingWidth: 80,
         title: const Text('紀錄詳情', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         actions: [
@@ -2036,7 +2330,6 @@ class RecordDetailPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 頂部總結卡片
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -2052,18 +2345,8 @@ class RecordDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('王先生的復健紀錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                        child: Text('完成度 ${record['rate']}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                  const Text('王先生的復健紀錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
@@ -2097,7 +2380,7 @@ class RecordDetailPage extends StatelessWidget {
                           children: [
                             const Text('紀錄項目', style: TextStyle(fontSize: 12, color: Colors.grey)),
                             const SizedBox(height: 4),
-                            Text('${record['itemsCount']}項完整', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                            Text('${record['itemsCount']}項動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                           ],
                         ),
                       ),
@@ -2107,69 +2390,104 @@ class RecordDetailPage extends StatelessWidget {
               ),
             ),
           ),
+
           const SizedBox(height: 24),
 
-          const Row(
-            children: [
-              Icon(Icons.show_chart, color: Color(0xFF0D9488), size: 24),
-              SizedBox(width: 8),
-              Text('各項動作數據分析', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-            ],
-          ),
-          const SizedBox(height: 16),
+          const Text('數據分析總覽 (左右平均幅度)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 12),
+          RomComparisonChart(results: results),
 
-          // 詳細數據列表
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              children: results.asMap().entries.map((entry) {
-                final index = entry.key;
-                final res = entry.value as Map<String, dynamic>;
-                final isLast = index == results.length - 1;
+          const SizedBox(height: 24),
+          const Text('每下動作詳細解析', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 12),
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(res['name'], style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                          const SizedBox(height: 8),
-                          if (res['type'] == 'standard') ...[
-                            Row(
-                              children: [
-                                Expanded(child: Text('左：${res['leftCount']}次 ${res['leftMax']}', style: const TextStyle(fontSize: 14, color: Color(0xFF475569)))),
-                                Expanded(child: Text('右：${res['rightCount']}次 ${res['rightMax']}', style: const TextStyle(fontSize: 14, color: Color(0xFF475569)))),
-                              ],
-                            ),
-                          ] else ...[
-                            Row(
-                              children: [
-                                Expanded(child: Text('左：順${res['leftFwdCount']} 逆${res['leftBwdCount']} ${res['leftFwdMax']}', style: const TextStyle(fontSize: 13, color: Color(0xFF475569)))),
-                                Expanded(child: Text('右：順${res['rightFwdCount']} 逆${res['rightBwdCount']} ${res['rightFwdMax']}', style: const TextStyle(fontSize: 13, color: Color(0xFF475569)))),
-                              ],
-                            ),
-                          ]
-                        ],
-                      ),
-                    ),
-                    if (!isLast)
-                      Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
+          ...results.map((res) => _buildActionDetailCard(res as Map<String, dynamic>)),
+
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionDetailCard(Map<String, dynamic> data) {
+    List leftReps = data['left'] as List? ?? [];
+    List rightReps = data['right'] as List? ?? [];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: Color(0xFF0D9488), width: 4)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data['name'] ?? '未知動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1)),
+
+            _buildSideRepList('左側', leftReps, isComplex: data['type'] == 'complex'),
+            const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(height: 1, color: Colors.black12)),
+            _buildSideRepList('右側', rightReps, isComplex: data['type'] == 'complex'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSideRepList(String sideTitle, List reps, {required bool isComplex}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.accessibility_new, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Text(sideTitle, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 14)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
+              child: Text('共 ${reps.length} 次', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            )
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (reps.isEmpty)
+          const Text('無資料', style: TextStyle(color: Colors.grey, fontSize: 13))
+        else
+          ...reps.map((repData) {
+            String dirText = isComplex && repData['dir'] != null ? ' (${repData['dir']})' : '';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: Text('第 ${repData['rep']} 次$dirText', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                  ),
+                  Expanded(
+                    child: Text('${repData['start']}°  ➔  ${repData['end']}°', style: const TextStyle(fontSize: 13, color: Colors.black87, fontFamily: 'monospace')),
+                  ),
+                  Text('幅度 ${repData['rom']}°', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
+                ],
+              ),
+            );
+          }),
+      ],
     );
   }
 }
