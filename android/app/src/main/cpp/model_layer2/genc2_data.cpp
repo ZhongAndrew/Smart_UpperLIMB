@@ -5,7 +5,7 @@
 // File: genc2_data.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:24:51
+// C/C++ source code generated on  : 12-Mar-2026 14:40:35
 //
 
 // Include Files
@@ -13,6 +13,7 @@
 #include "rt_nonfinite.h"
 
 // Variable Definitions
+namespace layer2 {
 const signed char iv[324]{
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -27,6 +28,8 @@ const signed char iv[324]{
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
+
+}
 
 //
 // File trailer for genc2_data.cpp

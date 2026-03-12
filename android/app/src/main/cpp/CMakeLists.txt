@@ -1,19 +1,16 @@
 cmake_minimum_required(VERSION 3.18.1)
+project(native_ml_libs)
 
-project(SmartRehabML)
+# --- 第一層模型庫 (genc) ---
+file(GLOB L1_SOURCES "model_layer1/*.cpp")
+add_library(native_l1 SHARED ${L1_SOURCES} bridge_l1.cpp) # 稍後建立 bridge_l1
+target_include_directories(native_l1 PRIVATE model_layer1 .)
 
-# 1. 自動搜尋 cpp 資料夾下所有的 .cpp 和 .h 檔案
-# 搜尋所有子目錄下的源碼
-file(GLOB_RECURSE LIB_SOURCES "model_layer1/*.cpp" "model_layer2/*.cpp" "bridge.cpp")
+# --- 第二層模型庫 (genc2) ---
+file(GLOB L2_SOURCES "model_layer2/*.cpp")
+add_library(native_l2 SHARED ${L2_SOURCES} bridge_l2.cpp) # 稍後建立 bridge_l2
+target_include_directories(native_l2 PRIVATE model_layer2 .)
 
-add_library(native_ml_lib SHARED ${LIB_SOURCES})
-
-# 關鍵：同時加入兩個資料夾作為標頭檔路徑
-target_include_directories(native_ml_lib PRIVATE
-    model_layer1
-    model_layer2
-    .
-)
-# 4. 連結系統庫
-find_library(log-lib log)
-target_link_libraries(native_ml_lib ${log-lib})
+# 連結 log 庫
+target_link_libraries(native_l1 log)
+target_link_libraries(native_l2 log)

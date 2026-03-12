@@ -5,7 +5,7 @@
 // File: genc_initialize.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:05:50
+// C/C++ source code generated on  : 12-Mar-2026 14:36:54
 //
 
 #ifndef GENC_INITIALIZE_H
@@ -17,7 +17,10 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace layer1 {
 extern void genc_initialize();
+
+}
 
 #endif
 //

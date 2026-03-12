@@ -5,7 +5,7 @@
 // File: updateCache.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:05:50
+// C/C++ source code generated on  : 12-Mar-2026 14:36:54
 //
 
 #ifndef UPDATECACHE_H
@@ -18,22 +18,25 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace layer1 {
 namespace coder {
 namespace classreg {
 namespace learning {
 namespace coder {
 namespace ensembleutils {
-void updateCache(const array<double, 2U> &learnerscore,
-                 array<double, 2U> &cachedScore,
-                 array<double, 1U> &cachedWeights, bool &cached,
-                 const char combinerName[15], const array<bool, 1U> &obsIndices,
-                 array<double, 2U> &score);
+void updateCache(const ::coder::array<double, 2U> &learnerscore,
+                 ::coder::array<double, 2U> &cachedScore,
+                 ::coder::array<double, 1U> &cachedWeights, bool &cached,
+                 const char combinerName[15],
+                 const ::coder::array<bool, 1U> &obsIndices,
+                 ::coder::array<double, 2U> &score);
 
 }
 } // namespace coder
 } // namespace learning
 } // namespace classreg
 } // namespace coder
+} // namespace layer1
 
 #endif
 //

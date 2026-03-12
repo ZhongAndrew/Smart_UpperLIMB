@@ -5,7 +5,7 @@
 // File: aggregatePredict.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:05:50
+// C/C++ source code generated on  : 12-Mar-2026 14:36:54
 //
 
 // Include Files
@@ -18,78 +18,122 @@
 
 // Function Definitions
 //
-// Arguments    : const array<double, 2U> &X
-//                array<double, 2U> &score
+// Arguments    : const ::coder::array<double, 2U> &X
+//                ::coder::array<double, 2U> &score
 //                const bool isCached[200]
 //                const bool learners[200]
-//                const array<bool, 2U> &useObsForLearner
+//                const ::coder::array<bool, 2U> &useObsForLearner
 // Return Type  : void
 //
+namespace layer1 {
 namespace coder {
 namespace classreg {
 namespace learning {
 namespace coder {
 namespace ensembleutils {
-void aggregatePredict(const array<double, 2U> &X, array<double, 2U> &score,
+void aggregatePredict(const ::coder::array<double, 2U> &X,
+                      ::coder::array<double, 2U> &score,
                       const bool isCached[200], const bool learners[200],
-                      const array<bool, 2U> &useObsForLearner)
+                      const ::coder::array<bool, 2U> &useObsForLearner)
 {
-  static ::coder::classreg::learning::classif::ab_CompactClassificationTree r25;
-  static ::coder::classreg::learning::classif::ac_CompactClassificationTree r50;
-  static ::coder::classreg::learning::classif::b_CompactClassificationTree r1;
-  static ::coder::classreg::learning::classif::bb_CompactClassificationTree r26;
-  static ::coder::classreg::learning::classif::c_CompactClassificationTree r2;
-  static ::coder::classreg::learning::classif::cb_CompactClassificationTree r27;
-  static ::coder::classreg::learning::classif::eb_CompactClassificationTree r29;
-  static ::coder::classreg::learning::classif::f_CompactClassificationTree r5;
-  static ::coder::classreg::learning::classif::fb_CompactClassificationTree r30;
-  static ::coder::classreg::learning::classif::gb_CompactClassificationTree r31;
-  static ::coder::classreg::learning::classif::h_CompactClassificationTree r7;
-  static ::coder::classreg::learning::classif::hb_CompactClassificationTree r32;
-  static ::coder::classreg::learning::classif::i_CompactClassificationTree r8;
-  static ::coder::classreg::learning::classif::ib_CompactClassificationTree r33;
-  static ::coder::classreg::learning::classif::j_CompactClassificationTree r9;
-  static ::coder::classreg::learning::classif::jb_CompactClassificationTree r34;
-  static ::coder::classreg::learning::classif::k_CompactClassificationTree r10;
-  static ::coder::classreg::learning::classif::l_CompactClassificationTree r11;
-  static ::coder::classreg::learning::classif::m_CompactClassificationTree r12;
-  static ::coder::classreg::learning::classif::n_CompactClassificationTree r13;
-  static ::coder::classreg::learning::classif::nb_CompactClassificationTree r38;
-  static ::coder::classreg::learning::classif::o_CompactClassificationTree r14;
-  static ::coder::classreg::learning::classif::ob_CompactClassificationTree r39;
-  static ::coder::classreg::learning::classif::pb_CompactClassificationTree r40;
-  static ::coder::classreg::learning::classif::q_CompactClassificationTree r16;
-  static ::coder::classreg::learning::classif::qb_CompactClassificationTree r41;
-  static ::coder::classreg::learning::classif::s_CompactClassificationTree r18;
-  static ::coder::classreg::learning::classif::sb_CompactClassificationTree r43;
-  static ::coder::classreg::learning::classif::tb_CompactClassificationTree r44;
-  static ::coder::classreg::learning::classif::ub_CompactClassificationTree r45;
-  static ::coder::classreg::learning::classif::v_CompactClassificationTree r21;
-  static ::coder::classreg::learning::classif::vb_CompactClassificationTree r46;
-  static ::coder::classreg::learning::classif::x_CompactClassificationTree r23;
-  static ::coder::classreg::learning::classif::xb_CompactClassificationTree r48;
-  static ::coder::classreg::learning::classif::y_CompactClassificationTree r24;
+  static ::layer1::coder::classreg::learning::classif::
+      ab_CompactClassificationTree r25;
+  static ::layer1::coder::classreg::learning::classif::
+      ac_CompactClassificationTree r50;
+  static ::layer1::coder::classreg::learning::classif::
+      b_CompactClassificationTree r1;
+  static ::layer1::coder::classreg::learning::classif::
+      bb_CompactClassificationTree r26;
+  static ::layer1::coder::classreg::learning::classif::
+      c_CompactClassificationTree r2;
+  static ::layer1::coder::classreg::learning::classif::
+      cb_CompactClassificationTree r27;
+  static ::layer1::coder::classreg::learning::classif::
+      eb_CompactClassificationTree r29;
+  static ::layer1::coder::classreg::learning::classif::
+      f_CompactClassificationTree r5;
+  static ::layer1::coder::classreg::learning::classif::
+      fb_CompactClassificationTree r30;
+  static ::layer1::coder::classreg::learning::classif::
+      gb_CompactClassificationTree r31;
+  static ::layer1::coder::classreg::learning::classif::
+      h_CompactClassificationTree r7;
+  static ::layer1::coder::classreg::learning::classif::
+      hb_CompactClassificationTree r32;
+  static ::layer1::coder::classreg::learning::classif::
+      i_CompactClassificationTree r8;
+  static ::layer1::coder::classreg::learning::classif::
+      ib_CompactClassificationTree r33;
+  static ::layer1::coder::classreg::learning::classif::
+      j_CompactClassificationTree r9;
+  static ::layer1::coder::classreg::learning::classif::
+      jb_CompactClassificationTree r34;
+  static ::layer1::coder::classreg::learning::classif::
+      k_CompactClassificationTree r10;
+  static ::layer1::coder::classreg::learning::classif::
+      l_CompactClassificationTree r11;
+  static ::layer1::coder::classreg::learning::classif::
+      m_CompactClassificationTree r12;
+  static ::layer1::coder::classreg::learning::classif::
+      n_CompactClassificationTree r13;
+  static ::layer1::coder::classreg::learning::classif::
+      nb_CompactClassificationTree r38;
+  static ::layer1::coder::classreg::learning::classif::
+      o_CompactClassificationTree r14;
+  static ::layer1::coder::classreg::learning::classif::
+      ob_CompactClassificationTree r39;
+  static ::layer1::coder::classreg::learning::classif::
+      pb_CompactClassificationTree r40;
+  static ::layer1::coder::classreg::learning::classif::
+      q_CompactClassificationTree r16;
+  static ::layer1::coder::classreg::learning::classif::
+      qb_CompactClassificationTree r41;
+  static ::layer1::coder::classreg::learning::classif::
+      s_CompactClassificationTree r18;
+  static ::layer1::coder::classreg::learning::classif::
+      sb_CompactClassificationTree r43;
+  static ::layer1::coder::classreg::learning::classif::
+      tb_CompactClassificationTree r44;
+  static ::layer1::coder::classreg::learning::classif::
+      ub_CompactClassificationTree r45;
+  static ::layer1::coder::classreg::learning::classif::
+      v_CompactClassificationTree r21;
+  static ::layer1::coder::classreg::learning::classif::
+      vb_CompactClassificationTree r46;
+  static ::layer1::coder::classreg::learning::classif::
+      x_CompactClassificationTree r23;
+  static ::layer1::coder::classreg::learning::classif::
+      xb_CompactClassificationTree r48;
+  static ::layer1::coder::classreg::learning::classif::
+      y_CompactClassificationTree r24;
   static const char combiner[15]{'W', 'e', 'i', 'g', 'h', 't', 'e', 'd',
                                  'A', 'v', 'e', 'r', 'a', 'g', 'e'};
-  ::coder::classreg::learning::classif::CompactClassificationTree r;
-  ::coder::classreg::learning::classif::d_CompactClassificationTree r3;
-  ::coder::classreg::learning::classif::db_CompactClassificationTree r28;
-  ::coder::classreg::learning::classif::e_CompactClassificationTree r4;
-  ::coder::classreg::learning::classif::g_CompactClassificationTree r6;
-  ::coder::classreg::learning::classif::kb_CompactClassificationTree r35;
-  ::coder::classreg::learning::classif::lb_CompactClassificationTree r36;
-  ::coder::classreg::learning::classif::mb_CompactClassificationTree r37;
-  ::coder::classreg::learning::classif::p_CompactClassificationTree r15;
-  ::coder::classreg::learning::classif::r_CompactClassificationTree r17;
-  ::coder::classreg::learning::classif::rb_CompactClassificationTree r42;
-  ::coder::classreg::learning::classif::t_CompactClassificationTree r19;
-  ::coder::classreg::learning::classif::u_CompactClassificationTree r20;
-  ::coder::classreg::learning::classif::w_CompactClassificationTree r22;
-  ::coder::classreg::learning::classif::wb_CompactClassificationTree r47;
-  ::coder::classreg::learning::classif::yb_CompactClassificationTree r49;
-  array<double, 2U> cachedScore;
-  array<double, 1U> cachedWeights;
-  array<bool, 1U> b_useObsForLearner;
+  ::layer1::coder::classreg::learning::classif::CompactClassificationTree r;
+  ::layer1::coder::classreg::learning::classif::d_CompactClassificationTree r3;
+  ::layer1::coder::classreg::learning::classif::db_CompactClassificationTree
+      r28;
+  ::layer1::coder::classreg::learning::classif::e_CompactClassificationTree r4;
+  ::layer1::coder::classreg::learning::classif::g_CompactClassificationTree r6;
+  ::layer1::coder::classreg::learning::classif::kb_CompactClassificationTree
+      r35;
+  ::layer1::coder::classreg::learning::classif::lb_CompactClassificationTree
+      r36;
+  ::layer1::coder::classreg::learning::classif::mb_CompactClassificationTree
+      r37;
+  ::layer1::coder::classreg::learning::classif::p_CompactClassificationTree r15;
+  ::layer1::coder::classreg::learning::classif::r_CompactClassificationTree r17;
+  ::layer1::coder::classreg::learning::classif::rb_CompactClassificationTree
+      r42;
+  ::layer1::coder::classreg::learning::classif::t_CompactClassificationTree r19;
+  ::layer1::coder::classreg::learning::classif::u_CompactClassificationTree r20;
+  ::layer1::coder::classreg::learning::classif::w_CompactClassificationTree r22;
+  ::layer1::coder::classreg::learning::classif::wb_CompactClassificationTree
+      r47;
+  ::layer1::coder::classreg::learning::classif::yb_CompactClassificationTree
+      r49;
+  ::coder::array<double, 2U> cachedScore;
+  ::coder::array<double, 1U> cachedWeights;
+  ::coder::array<bool, 1U> b_useObsForLearner;
   int b_loop_ub;
   int loop_ub;
   bool b;
@@ -3700,6 +3744,7 @@ void aggregatePredict(const array<double, 2U> &X, array<double, 2U> &score,
 } // namespace learning
 } // namespace classreg
 } // namespace coder
+} // namespace layer1
 
 //
 // File trailer for aggregatePredict.cpp

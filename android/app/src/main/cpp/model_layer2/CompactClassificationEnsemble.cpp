@@ -5,7 +5,7 @@
 // File: CompactClassificationEnsemble.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:24:51
+// C/C++ source code generated on  : 12-Mar-2026 14:40:35
 //
 
 // Include Files
@@ -25,6 +25,7 @@
 // Arguments    : void
 // Return Type  : void
 //
+namespace layer2 {
 namespace coder {
 namespace classreg {
 namespace learning {
@@ -54,18 +55,19 @@ void CompactClassificationEnsemble::init()
 }
 
 //
-// Arguments    : const array<double, 2U> &Xin
-//                array<double, 1U> &labels
+// Arguments    : const ::coder::array<double, 2U> &Xin
+//                ::coder::array<double, 1U> &labels
 // Return Type  : void
 //
-void CompactClassificationEnsemble::predict(const array<double, 2U> &Xin,
-                                            array<double, 1U> &labels) const
+void CompactClassificationEnsemble::predict(
+    const ::coder::array<double, 2U> &Xin,
+    ::coder::array<double, 1U> &labels) const
 {
-  array<double, 2U> scoreIn;
-  array<double, 1U> classnum;
-  array<bool, 2U> b;
-  array<bool, 2U> r;
-  array<bool, 1U> notNaN;
+  ::coder::array<double, 2U> scoreIn;
+  ::coder::array<double, 1U> classnum;
+  ::coder::array<bool, 2U> b;
+  ::coder::array<bool, 2U> r;
+  ::coder::array<bool, 1U> notNaN;
   if (Xin.size(0) == 0) {
     labels.set_size(0);
   } else {
@@ -168,6 +170,7 @@ void CompactClassificationEnsemble::predict(const array<double, 2U> &Xin,
 } // namespace learning
 } // namespace classreg
 } // namespace coder
+} // namespace layer2
 
 //
 // File trailer for CompactClassificationEnsemble.cpp

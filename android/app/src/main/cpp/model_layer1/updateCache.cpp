@@ -5,7 +5,7 @@
 // File: updateCache.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:05:50
+// C/C++ source code generated on  : 12-Mar-2026 14:36:54
 //
 
 // Include Files
@@ -15,25 +15,27 @@
 
 // Function Definitions
 //
-// Arguments    : const array<double, 2U> &learnerscore
-//                array<double, 2U> &cachedScore
-//                array<double, 1U> &cachedWeights
+// Arguments    : const ::coder::array<double, 2U> &learnerscore
+//                ::coder::array<double, 2U> &cachedScore
+//                ::coder::array<double, 1U> &cachedWeights
 //                bool &cached
 //                const char combinerName[15]
-//                const array<bool, 1U> &obsIndices
-//                array<double, 2U> &score
+//                const ::coder::array<bool, 1U> &obsIndices
+//                ::coder::array<double, 2U> &score
 // Return Type  : void
 //
+namespace layer1 {
 namespace coder {
 namespace classreg {
 namespace learning {
 namespace coder {
 namespace ensembleutils {
-void updateCache(const array<double, 2U> &learnerscore,
-                 array<double, 2U> &cachedScore,
-                 array<double, 1U> &cachedWeights, bool &cached,
-                 const char combinerName[15], const array<bool, 1U> &obsIndices,
-                 array<double, 2U> &score)
+void updateCache(const ::coder::array<double, 2U> &learnerscore,
+                 ::coder::array<double, 2U> &cachedScore,
+                 ::coder::array<double, 1U> &cachedWeights, bool &cached,
+                 const char combinerName[15],
+                 const ::coder::array<bool, 1U> &obsIndices,
+                 ::coder::array<double, 2U> &score)
 {
   static const char cv[128]{
       '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\a',   '\b',
@@ -53,9 +55,9 @@ void updateCache(const array<double, 2U> &learnerscore,
       '~',    '\x7f'};
   static const char cv1[15]{'w', 'e', 'i', 'g', 'h', 't', 'e', 'd',
                             'a', 'v', 'e', 'r', 'a', 'g', 'e'};
-  array<double, 2U> b_cachedScore;
-  array<double, 1U> b_cachedWeights;
-  array<int, 1U> r;
+  ::coder::array<double, 2U> b_cachedScore;
+  ::coder::array<double, 1U> b_cachedWeights;
+  ::coder::array<int, 1U> r;
   int i;
   int loop_ub;
   i = cachedScore.size(0);
@@ -186,6 +188,7 @@ void updateCache(const array<double, 2U> &learnerscore,
 } // namespace learning
 } // namespace classreg
 } // namespace coder
+} // namespace layer1
 
 //
 // File trailer for updateCache.cpp

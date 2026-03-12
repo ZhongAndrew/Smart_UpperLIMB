@@ -5,7 +5,7 @@
 // File: minOrMax.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:24:51
+// C/C++ source code generated on  : 12-Mar-2026 14:40:35
 //
 
 // Include Files
@@ -19,6 +19,7 @@
 //                int &idx
 // Return Type  : double
 //
+namespace layer2 {
 namespace coder {
 namespace internal {
 double maximum(const double x[18], int &idx)
@@ -108,6 +109,7 @@ double minimum(const double x[18], int &idx)
 
 } // namespace internal
 } // namespace coder
+} // namespace layer2
 
 //
 // File trailer for minOrMax.cpp

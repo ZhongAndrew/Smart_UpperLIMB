@@ -6,6 +6,9 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'package:ffi/ffi.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart'; // 如果有裝的話
 
 typedef MLFuncNative = ffi.Double Function(ffi.Pointer<ffi.Double>);
 typedef MLFuncDart = double Function(ffi.Pointer<ffi.Double>);
@@ -633,43 +636,247 @@ class DashboardPage extends StatelessWidget {
   // 在 DashboardPage 類別定義內新增此方法
   Future<void> _runFullValidation(BuildContext context) async {
     try {
-      // 1. 顯示讀取狀態
-      showTopToast(context, "正在讀取驗證集 FTGT_s1.csv...");
+      showTopToast(context, "正在執行修正後的兩層驗證...");
 
-      // 2. 載入 Assets 檔案
       final String csvData = await rootBundle.loadString('assets/FTGT_s1.csv');
       final List<String> lines = const LineSplitter().convert(csvData);
 
-      // 3. 載入 C++ 函式庫與定義函式
-      final dylib = ffi.DynamicLibrary.open("libnative_ml_lib.so");
+      final dylib1 = ffi.DynamicLibrary.open("libnative_l1.so");
+      final dylib2 = ffi.DynamicLibrary.open("libnative_l2.so");
+
+      final predictL1 = dylib1.lookupFunction<MLFuncNative, MLFuncDart>("run_l1");
+      final predictL2 = dylib2.lookupFunction<MLFuncNative, MLFuncDart>("run_l2");
+
       final ffi.Pointer<ffi.Double> ptr = calloc<ffi.Double>(280);
-      // 現在只需 lookup 這個統一的串接函式
-      final predictFull = dylib.lookupFunction<MLFuncNative, MLFuncDart>("run_hierarchical_model");
 
-      int correctCount = 0;
-      int totalCount = 0;
+      int totalRows = 0;
+      int l1Correct = 0; // 二元過濾正確數
+      int l2Correct = 0; // 動作辨識正確數
+      int finalMatch = 0; // 整體鏈路完全正確數
 
-      for (var line in lines) {
-        final columns = line.split(',');
+      print("--- 🔍 深度驗證報告 (L1:二元, L2:動作編號) ---");
+
+      for (int i = 0; i < lines.length; i++) {
+        final columns = lines[i].split(',');
         if (columns.length < 282) continue;
 
-        totalCount++;
-        for (int j = 0; j < 280; j++) ptr[j] = double.tryParse(columns[j]) ?? 0.0;
+        totalRows++;
+        for (int j = 0; j < 280; j++) {
+          ptr[j] = double.tryParse(columns[j]) ?? 0.0;
+        }
 
-        // 取得 CSV 中的「二元動作」標籤 (Index 281) 作為比對基準
-        double expectedBinary = double.parse(columns[281]);
+        // --- 💡 修正後的正確答案索引 ---
+        double gtBinary = double.parse(columns[281]); // 第一層答案：二元標籤 (Index 281)
+        double gtActionID = double.parse(columns[280]); // 第二層答案：動作編號 (Index 280)
 
-        // 執行串接預測
-        double actualResult = predictFull(ptr);
+        // --- 執行預測 ---
+        double predL1 = predictL1(ptr); // genc 預測
+        double predL2 = 0.0;           // 預設為 0
 
-        if ((actualResult - expectedBinary).abs() < 0.1) {
-          correctCount++;
+        // 統計第一層 (二元過濾)
+        if ((predL1 - gtBinary).abs() < 0.1) {
+          l1Correct++;
+        }
+
+        // 串接邏輯：第一層說「是 (1.0)」，才進第二層
+        if ((predL1 - 1.0).abs() < 0.1) {
+          predL2 = predictL2(ptr); // genc2 預測
+
+          // 統計第二層 (動作辨識)
+          if ((predL2 - gtActionID).abs() < 0.1) {
+            l2Correct++;
+          }
+        } else {
+          // 如果第一層說是 0，且正確答案也是 0，我們也算這筆資料處理正確
+          if (gtBinary == 0.0) l2Correct++;
+        }
+
+        // 整體判斷：L1 跟 L2 都跟答案對上才算完全正確
+        if ((predL1 - gtBinary).abs() < 0.1 && (predL2 - gtActionID).abs() < 0.1) {
+          finalMatch++;
+        }
+
+        // 每 100 筆印一次，或遇到錯誤時印出比對
+        bool isWrong = (predL1 - gtBinary).abs() > 0.1 || (predL2 - gtActionID).abs() > 0.1;
+        if (i % 100 == 0 || isWrong) {
+          print("Row $i | L1(Bin): GT $gtBinary vs PRED $predL1 | L2(ID): GT $gtActionID vs PRED $predL2 | ${isWrong ? '❌' : '✅'}");
         }
       }
-      // ... 輸出準確度 ...
+
+      calloc.free(ptr);
+
+      double accL1 = (l1Correct / totalRows) * 100;
+      double accL2 = (l2Correct / totalRows) * 100;
+      double totalAcc = (finalMatch / totalRows) * 100;
+
+      print("========================================");
+      print("📊 修正後總結報告");
+      print("總樣本數: $totalRows");
+      print("第一層 (二元過濾) 準確度: ${accL1.toStringAsFixed(2)}%");
+      print("第二層 (動作辨識) 準確度: ${accL2.toStringAsFixed(2)}%");
+      print("整體模型鏈路總準確度: ${totalAcc.toStringAsFixed(2)}%");
+      print("========================================");
+
+      showTopToast(context, "✅ 驗證完成！總準確度：${totalAcc.toStringAsFixed(2)}%");
+
     } catch (e) {
-      print("驗證失敗: $e");
-      showTopToast(context, "❌ 找不到檔案或 C++ 函式報錯");
+      print("❌ 驗證失敗: $e");
+      showTopToast(context, "❌ 發生錯誤，請查看 Console");
+    }
+  }
+  Future<void> _runS2Inference(BuildContext context) async {
+    try {
+      showTopToast(context, "正在推理新病患資料 (FT_s2)...");
+
+      // 1. 確保 assets 資料夾中有 FT_s2.csv，且 pubspec.yaml 已註冊
+      final String csvData = await rootBundle.loadString('assets/FT_s2.csv');
+      final List<String> lines = const LineSplitter().convert(csvData);
+
+      final dylib1 = ffi.DynamicLibrary.open("libnative_l1.so");
+      final dylib2 = ffi.DynamicLibrary.open("libnative_l2.so");
+
+      final predictL1 = dylib1.lookupFunction<MLFuncNative, MLFuncDart>("run_l1");
+      final predictL2 = dylib2.lookupFunction<MLFuncNative, MLFuncDart>("run_l2");
+
+      final ffi.Pointer<ffi.Double> ptr = calloc<ffi.Double>(280);
+
+      print("--- 🚀 FT_s2 推理結果輸出 (L1:二元, L2:動作編號) ---");
+
+      int processCount = 0;
+      for (int i = 0; i < lines.length; i++) {
+        final columns = lines[i].split(',');
+        if (columns.length < 280) continue; // 只要有 280 個特徵就能跑
+
+        processCount++;
+        for (int j = 0; j < 280; j++) {
+          ptr[j] = double.tryParse(columns[j]) ?? 0.0;
+        }
+
+        // --- 執行推理 ---
+        double predL1 = predictL1(ptr); // 第一層：二元過濾 (0或1)
+        double predL2 = 0.0;           // 第二層預設為 0
+
+        // 只有當第一層預測為 1 時，才執行第二層辨識
+        if ((predL1 - 1.0).abs() < 0.1) {
+          predL2 = predictL2(ptr);
+        }
+
+        // --- 直接輸出預測結果 ---
+        // 建議每 10 筆或 50 筆印一次，或者如果你需要全部比對，可以全部印出
+        print("Row $i | 推理 L1(Bin): $predL1 | 推理 L2(ID): $predL2");
+
+      }
+
+      calloc.free(ptr);
+      print("--- ✅ 推理結束，共處理 $processCount 筆資料 ---");
+      showTopToast(context, "FT_s2 推理完成，請查看 Console 輸出");
+
+    } catch (e) {
+      print("❌ 推理失敗: $e");
+      showTopToast(context, "❌ 讀取 FT_s2.csv 失敗");
+    }
+  }
+  Future<void> _runS2InferenceAndExport(BuildContext context) async {
+    try {
+      showTopToast(context, "推理中並準備導出 CSV...");
+
+      final String csvData = await rootBundle.loadString('assets/FT_s2.csv');
+      final List<String> lines = const LineSplitter().convert(csvData);
+
+      final dylib1 = ffi.DynamicLibrary.open("libnative_l1.so");
+      final dylib2 = ffi.DynamicLibrary.open("libnative_l2.so");
+
+      final predictL1 = dylib1.lookupFunction<MLFuncNative, MLFuncDart>("run_l1");
+      final predictL2 = dylib2.lookupFunction<MLFuncNative, MLFuncDart>("run_l2");
+
+      final ffi.Pointer<ffi.Double> ptr = calloc<ffi.Double>(280);
+
+      // 💡 建立 CSV 內容
+      StringBuffer csvContent = StringBuffer();
+      csvContent.writeln("Row,L1_Binary,L2_ActionID"); // 標題列
+
+      for (int i = 0; i < lines.length; i++) {
+        final columns = lines[i].split(',');
+        if (columns.length < 280) continue;
+
+        for (int j = 0; j < 280; j++) ptr[j] = double.tryParse(columns[j]) ?? 0.0;
+
+        double p1 = predictL1(ptr);
+        double p2 = 0.0;
+        if ((p1 - 1.0).abs() < 0.1) p2 = predictL2(ptr);
+
+        // 💡 紀錄到 StringBuffer
+        csvContent.writeln("$i,${p1.toStringAsFixed(0)},${p2.toStringAsFixed(0)}");
+      }
+      calloc.free(ptr);
+
+      // 💡 寫入手機暫存資料夾
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/inference_results.csv');
+      await file.writeAsString(csvContent.toString());
+
+      showTopToast(context, "✅ CSV 已生成！正在開啟分享...");
+
+      // 💡 這裡直接彈出分享視窗，你可以把檔案傳給自己的 Line 或 Email
+      await Share.shareXFiles([XFile(file.path)], text: 'FT_s2 預測結果');
+
+    } catch (e) {
+      print("❌ 導出失敗: $e");
+      showTopToast(context, "導出 CSV 發生錯誤");
+    }
+  }
+  Future<void> _runS2AndExportCsv(BuildContext context) async {
+    try {
+      showTopToast(context, "正在推理並準備 CSV...");
+
+      // 1. 讀取檔案
+      final String csvData = await rootBundle.loadString('assets/FT_s2.csv');
+      final List<String> lines = const LineSplitter().convert(csvData);
+
+      // 2. 載入雙庫
+      final dylib1 = ffi.DynamicLibrary.open("libnative_l1.so");
+      final dylib2 = ffi.DynamicLibrary.open("libnative_l2.so");
+
+      final predictL1 = dylib1.lookupFunction<MLFuncNative, MLFuncDart>("run_l1");
+      final predictL2 = dylib2.lookupFunction<MLFuncNative, MLFuncDart>("run_l2");
+
+      final ffi.Pointer<ffi.Double> ptr = calloc<ffi.Double>(280);
+
+      // 3. 建立 CSV 內容緩衝區
+      StringBuffer csvBuffer = StringBuffer();
+      csvBuffer.writeln("RowIndex,Layer1_Binary,Layer2_ActionID");
+
+      for (int i = 0; i < lines.length; i++) {
+        final columns = lines[i].split(',');
+        if (columns.length < 280) continue;
+
+        for (int j = 0; j < 280; j++) {
+          ptr[j] = double.tryParse(columns[j]) ?? 0.0;
+        }
+
+        double p1 = predictL1(ptr);
+        double p2 = 0.0;
+        if ((p1 - 1.0).abs() < 0.1) {
+          p2 = predictL2(ptr);
+        }
+
+        csvBuffer.writeln("$i,${p1.toStringAsFixed(0)},${p2.toStringAsFixed(0)}");
+      }
+      calloc.free(ptr);
+
+      // 4. 儲存檔案並分享
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/S2_Prediction.csv');
+      await file.writeAsString(csvBuffer.toString());
+
+      showTopToast(context, "✅ 推理完成！正在開啟分享選單...");
+
+      // 呼叫分享功能
+      await Share.shareXFiles([XFile(file.path)], text: 'FT_s2 預測結果導出');
+
+    } catch (e) {
+      print("❌ 匯出失敗: $e");
+      showTopToast(context, "讀取 FT_s2.csv 失敗，請確認 Assets 配置");
     }
   }
   //-----------------------------------------------test end
@@ -683,16 +890,17 @@ class DashboardPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               // ------------------------------------------------test start
-              // 在 ListView 的 children 中
+              // 在 DashboardPage 的 ListView 子組件中
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D9488), // 改成與你主題一致的藍綠色
+                  backgroundColor: const Color(0xFFF59E0B), // 換個顏色（橘色）區分新測試
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () => _runFullValidation(context), // 觸發全量驗證
-                icon: const Icon(Icons.fact_check),
-                label: const Text('執行全量模型驗證 (FTGT_s1)'),
+                // 💡 將原本的 _runFullValidation 改為 _runS2Inference
+                onPressed: () => _runS2Inference(context),
+                icon: const Icon(Icons.analytics_outlined),
+                label: const Text('執行 S2 推理測試 (FT_s2)'),
               ),
               const SizedBox(height: 16),
               // ------------------------------------------------test end

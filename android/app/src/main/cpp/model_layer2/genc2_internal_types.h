@@ -5,7 +5,7 @@
 // File: genc2_internal_types.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:24:51
+// C/C++ source code generated on  : 12-Mar-2026 14:40:35
 //
 
 #ifndef GENC2_INTERNAL_TYPES_H
@@ -16,6 +16,7 @@
 #include "rtwtypes.h"
 
 // Type Definitions
+namespace layer2 {
 namespace coder {
 namespace classreg {
 namespace learning {
@@ -37,6 +38,7 @@ enum class Transform : int
 } // namespace learning
 } // namespace classreg
 } // namespace coder
+} // namespace layer2
 
 #endif
 //

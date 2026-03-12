@@ -5,7 +5,7 @@
 // File: genc2.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 10:24:51
+// C/C++ source code generated on  : 12-Mar-2026 14:40:35
 //
 
 // Include Files
@@ -16,17 +16,20 @@
 
 // Function Definitions
 //
-// Arguments    : const coder::array<double, 2U> &X_s1
-//                coder::array<double, 1U> &label_new
+// Arguments    : const ::coder::array<double, 2U> &X_s1
+//                ::coder::array<double, 1U> &label_new
 // Return Type  : void
 //
-void genc2(const coder::array<double, 2U> &X_s1,
-           coder::array<double, 1U> &label_new)
+namespace layer2 {
+void genc2(const ::coder::array<double, 2U> &X_s1,
+           ::coder::array<double, 1U> &label_new)
 {
   coder::classreg::learning::classif::CompactClassificationEnsemble r;
   r.init();
   r.predict(X_s1, label_new);
 }
+
+} // namespace layer2
 
 //
 // File trailer for genc2.cpp
