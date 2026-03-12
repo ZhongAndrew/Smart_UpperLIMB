@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert';
 import 'dart:ffi' as ffi;
-import 'dart:io';
+import 'package:ffi/ffi.dart';
+
+typedef MLFuncNative = ffi.Double Function(ffi.Pointer<ffi.Double>);
+typedef MLFuncDart = double Function(ffi.Pointer<ffi.Double>);
 
 void main() {
   runApp(const MyApp());
@@ -603,7 +608,71 @@ class DashboardPage extends StatelessWidget {
       },
     );
   }
+//------------------------------------------------test start
+  void _runCppTest(BuildContext context) {
+    try {
+      // 使用 ffi.DynamicLibrary
+      final dylib = ffi.DynamicLibrary.open("libnative_test.so");
 
+      // 將 NativeFunction、Int32 等前面都加上 ffi.
+      final int Function(int) testFunc = dylib
+          .lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Int32)>>("test_connection")
+          .asFunction();
+
+      final result = testFunc(88);
+
+      print("======== C++ 測試成功 ========");
+      showTopToast(context, "✅ C++ 呼叫成功！結果：$result");
+    } catch (e) {
+      print("======== C++ 測試失敗 ========");
+      print(e);
+      showTopToast(context, "❌ 找不到 C++ 庫");
+    }
+  }
+
+  // 在 DashboardPage 類別定義內新增此方法
+  Future<void> _runFullValidation(BuildContext context) async {
+    try {
+      // 1. 顯示讀取狀態
+      showTopToast(context, "正在讀取驗證集 FTGT_s1.csv...");
+
+      // 2. 載入 Assets 檔案
+      final String csvData = await rootBundle.loadString('assets/FTGT_s1.csv');
+      final List<String> lines = const LineSplitter().convert(csvData);
+
+      // 3. 載入 C++ 函式庫與定義函式
+      final dylib = ffi.DynamicLibrary.open("libnative_ml_lib.so");
+      final ffi.Pointer<ffi.Double> ptr = calloc<ffi.Double>(280);
+      // 現在只需 lookup 這個統一的串接函式
+      final predictFull = dylib.lookupFunction<MLFuncNative, MLFuncDart>("run_hierarchical_model");
+
+      int correctCount = 0;
+      int totalCount = 0;
+
+      for (var line in lines) {
+        final columns = line.split(',');
+        if (columns.length < 282) continue;
+
+        totalCount++;
+        for (int j = 0; j < 280; j++) ptr[j] = double.tryParse(columns[j]) ?? 0.0;
+
+        // 取得 CSV 中的「二元動作」標籤 (Index 281) 作為比對基準
+        double expectedBinary = double.parse(columns[281]);
+
+        // 執行串接預測
+        double actualResult = predictFull(ptr);
+
+        if ((actualResult - expectedBinary).abs() < 0.1) {
+          correctCount++;
+        }
+      }
+      // ... 輸出準確度 ...
+    } catch (e) {
+      print("驗證失敗: $e");
+      showTopToast(context, "❌ 找不到檔案或 C++ 函式報錯");
+    }
+  }
+  //-----------------------------------------------test end
   @override
   Widget build(BuildContext context) {
     int connectedCount = sensors.where((s) => s['isConnected'] == true).length;
@@ -613,6 +682,20 @@ class DashboardPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // ------------------------------------------------test start
+              // 在 ListView 的 children 中
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488), // 改成與你主題一致的藍綠色
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => _runFullValidation(context), // 觸發全量驗證
+                icon: const Icon(Icons.fact_check),
+                label: const Text('執行全量模型驗證 (FTGT_s1)'),
+              ),
+              const SizedBox(height: 16),
+              // ------------------------------------------------test end
               GestureDetector(
                 onTap: () => _showCSVSelectionDialog(context),
                 child: Container(
