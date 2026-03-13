@@ -62,6 +62,9 @@ flutter:
   assets:
     - assets/FTGT_s1.csv
     - assets/FT_s2.csv
+    - assets/X_s1.csv
+    - assets/FT_s3.csv
+    - assets/FT_s1.csv
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
