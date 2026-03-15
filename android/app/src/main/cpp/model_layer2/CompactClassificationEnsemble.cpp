@@ -5,7 +5,7 @@
 // File: CompactClassificationEnsemble.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 14:40:35
+// C/C++ source code generated on  : 14-Mar-2026 15:19:23
 //
 
 // Include Files
@@ -14,11 +14,8 @@
 #include "genc2_data.h"
 #include "genc2_internal_types.h"
 #include "minOrMax.h"
-#include "rt_nonfinite.h"
-#include "coder_array.h"
 #include <algorithm>
 #include <cmath>
-#include <cstring>
 
 // Function Definitions
 //
@@ -55,115 +52,46 @@ void CompactClassificationEnsemble::init()
 }
 
 //
-// Arguments    : const ::coder::array<double, 2U> &Xin
-//                ::coder::array<double, 1U> &labels
-// Return Type  : void
+// Arguments    : const double Xin[280]
+// Return Type  : double
 //
-void CompactClassificationEnsemble::predict(
-    const ::coder::array<double, 2U> &Xin,
-    ::coder::array<double, 1U> &labels) const
+double CompactClassificationEnsemble::predict(const double Xin[280]) const
 {
-  ::coder::array<double, 2U> scoreIn;
-  ::coder::array<double, 1U> classnum;
-  ::coder::array<bool, 2U> b;
-  ::coder::array<bool, 2U> r;
-  ::coder::array<bool, 1U> notNaN;
-  if (Xin.size(0) == 0) {
-    labels.set_size(0);
-  } else {
-    int b_loop_ub;
-    int i1;
-    int i2;
-    int loop_ub;
-    bool bv[1000];
-    scoreIn.set_size(Xin.size(0), 18);
-    i2 = Xin.size(0) * 18;
-    if (i2 - 1 >= 0) {
-      std::memset(&scoreIn[0], 0,
-                  static_cast<unsigned int>(i2) * sizeof(double));
-    }
-    for (int j{0}; j < 1000; j++) {
-      bv[j] = true;
-    }
-    r.set_size(Xin.size(0), 1000);
-    i2 = Xin.size(0) * 1000;
-    for (int j{0}; j < i2; j++) {
-      r[j] = true;
-    }
-    coder::ensembleutils::aggregatePredict(Xin, scoreIn, IsCached, bv, r);
-    loop_ub = scoreIn.size(0);
-    b.set_size(scoreIn.size(0), 18);
-    i2 = scoreIn.size(0) * 18;
-    for (int j{0}; j < i2; j++) {
-      b[j] = std::isnan(scoreIn[j]);
-    }
-    notNaN.set_size(b.size(0));
-    b_loop_ub = b.size(0);
-    for (int j{0}; j < b_loop_ub; j++) {
-      notNaN[j] = true;
-    }
-    i2 = 17 * b.size(0);
-    i1 = 1;
-    for (int j{0}; j < loop_ub; j++) {
-      int i1_tmp;
-      int ix;
-      bool exitg1;
-      i1_tmp = i1;
-      i1++;
-      i2++;
-      ix = i1_tmp;
-      exitg1 = false;
-      while ((!exitg1) && ((loop_ub > 0) && (ix <= i2))) {
-        if (!b[ix - 1]) {
-          notNaN[i1_tmp - 1] = false;
-          exitg1 = true;
-        } else {
-          ix += loop_ub;
-        }
-      }
-    }
-    for (int j{0}; j < b_loop_ub; j++) {
-      notNaN[j] = !notNaN[j];
-    }
-    internal::maximum(Prior, i1);
-    classnum.set_size(scoreIn.size(0));
-    for (int j{0}; j < loop_ub; j++) {
-      classnum[j] = rtNaN;
-    }
-    for (int idx{0}; idx < b_loop_ub; idx++) {
-      if (notNaN[idx]) {
-        double b_scoreIn[18];
-        for (int j{0}; j < 18; j++) {
-          b_scoreIn[j] = scoreIn[idx + scoreIn.size(0) * j];
-        }
-        internal::maximum(b_scoreIn, i2);
-        classnum[idx] = i2;
-      }
-    }
-    labels.set_size(scoreIn.size(0));
-    for (int j{0}; j < loop_ub; j++) {
-      labels[j] =
-          static_cast<signed char>(static_cast<signed char>(i1 - 1) + 1);
-    }
-    for (int j{0}; j < b_loop_ub; j++) {
-      if (notNaN[j]) {
-        double d;
-        unsigned int u;
-        d = classnum[j];
-        if (d < 4.294967296E+9) {
-          if (d >= 0.0) {
-            u = static_cast<unsigned int>(d);
-          } else {
-            u = 0U;
-          }
-        } else {
-          u = 0U;
-        }
-        labels[j] = static_cast<signed char>(
-            static_cast<signed char>(static_cast<int>(u) - 1) + 1);
-      }
+  double scoreIn[18];
+  double labels;
+  int k;
+  bool bv[1000];
+  bool b[18];
+  bool exitg1;
+  bool y;
+  for (int i{0}; i < 1000; i++) {
+    bv[i] = true;
+  }
+  coder::ensembleutils::aggregatePredict(Xin, IsCached, bv, scoreIn);
+  for (int i{0}; i < 18; i++) {
+    b[i] = std::isnan(scoreIn[i]);
+  }
+  y = true;
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k < 18)) {
+    if (!b[k]) {
+      y = false;
+      exitg1 = true;
+    } else {
+      k++;
     }
   }
+  internal::maximum(Prior, k);
+  labels = static_cast<signed char>(static_cast<signed char>(k - 1) + 1);
+  if (!y) {
+    internal::maximum(scoreIn, k);
+    if (k < 0) {
+      k = 0;
+    }
+    labels = static_cast<signed char>(static_cast<signed char>(k - 1) + 1);
+  }
+  return labels;
 }
 
 } // namespace classif

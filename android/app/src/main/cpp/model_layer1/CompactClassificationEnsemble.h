@@ -5,7 +5,7 @@
 // File: CompactClassificationEnsemble.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 14:36:54
+// C/C++ source code generated on  : 14-Mar-2026 15:13:47
 //
 
 #ifndef COMPACTCLASSIFICATIONENSEMBLE_H
@@ -14,7 +14,6 @@
 // Include Files
 #include "genc_internal_types.h"
 #include "rtwtypes.h"
-#include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
@@ -27,8 +26,12 @@ namespace classif {
 class CompactClassificationEnsemble {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels) const;
+  double predict(const double Xin[280]) const;
+
+protected:
+  void ensemblePredict(const double X[280], double score[2]) const;
+
+public:
   bool IsCached[200];
   double LearnerWeights[200];
   int ClassNamesLength[2];

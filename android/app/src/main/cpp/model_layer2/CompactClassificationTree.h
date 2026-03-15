@@ -5,7 +5,7 @@
 // File: CompactClassificationTree.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 14:40:35
+// C/C++ source code generated on  : 14-Mar-2026 15:19:23
 //
 
 #ifndef COMPACTCLASSIFICATIONTREE_H
@@ -14,7 +14,6 @@
 // Include Files
 #include "genc2_internal_types.h"
 #include "rtwtypes.h"
-#include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
@@ -27,9 +26,7 @@ namespace classif {
 class CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -55,9 +52,7 @@ public:
 class b_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -92,9 +87,7 @@ public:
 class c_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -152,9 +145,7 @@ public:
 class d_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -210,9 +201,7 @@ public:
 class e_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -246,9 +235,7 @@ public:
 class f_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   double CutPredictorIndex[385];
   double Children[770];
@@ -266,9 +253,7 @@ public:
 class g_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -319,9 +304,7 @@ public:
 class h_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -372,9 +355,7 @@ public:
 class i_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -423,9 +404,7 @@ public:
 class j_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -470,9 +449,7 @@ public:
 class k_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -515,9 +492,7 @@ public:
 class l_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -573,9 +548,7 @@ public:
 class m_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -620,9 +593,7 @@ public:
 class n_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -675,9 +646,7 @@ public:
 class o_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -711,9 +680,7 @@ public:
 class p_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -735,9 +702,7 @@ public:
 class q_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -794,9 +759,7 @@ public:
 class r_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -830,9 +793,7 @@ public:
 class s_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -854,9 +815,7 @@ public:
 class t_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -896,9 +855,7 @@ public:
 class u_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -932,9 +889,7 @@ public:
 class v_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -982,9 +937,7 @@ public:
 class w_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1014,9 +967,7 @@ public:
 class x_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1059,9 +1010,7 @@ public:
 class y_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1095,9 +1044,7 @@ public:
 class ab_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1154,9 +1101,7 @@ public:
 class bb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1192,9 +1137,7 @@ public:
 class cb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[369];
   double Children[738];
   double CutPoint[369];
@@ -1211,9 +1154,7 @@ public:
 class db_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1238,9 +1179,7 @@ public:
 class eb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1267,9 +1206,7 @@ public:
 class fb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1320,9 +1257,7 @@ public:
 class gb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1344,9 +1279,7 @@ public:
 class hb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1373,9 +1306,7 @@ public:
 class ib_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1396,9 +1327,7 @@ public:
 class jb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1441,9 +1370,7 @@ public:
 class kb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1473,9 +1400,7 @@ public:
 class lb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1509,9 +1434,7 @@ public:
 class mb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1540,9 +1463,7 @@ public:
 class nb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1583,9 +1504,7 @@ public:
 class ob_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   double CutPredictorIndex[379];
@@ -1604,9 +1523,7 @@ public:
 class pb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1647,9 +1564,7 @@ public:
 class qb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1691,9 +1606,7 @@ public:
 class rb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1714,9 +1627,7 @@ public:
 class sb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   double CutPredictorIndex[263];
@@ -1735,9 +1646,7 @@ public:
 class tb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1757,9 +1666,7 @@ public:
 class ub_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1794,9 +1701,7 @@ public:
 class vb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1820,9 +1725,7 @@ public:
 class wb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1845,9 +1748,7 @@ public:
 class xb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[261];
   double Children[522];
   double CutPoint[261];
@@ -1864,9 +1765,7 @@ public:
 class yb_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1887,9 +1786,7 @@ public:
 class ac_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1912,9 +1809,7 @@ public:
 class bc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1937,9 +1832,7 @@ public:
 class cc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1962,9 +1855,7 @@ public:
 class dc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   double CutPredictorIndex[271];
@@ -1983,9 +1874,7 @@ public:
 class ec_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   double CutPredictorIndex[377];
@@ -2004,9 +1893,7 @@ public:
 class fc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   double CutPredictorIndex[371];
   double Children[742];
@@ -2024,9 +1911,7 @@ public:
 class gc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[375];
   double Children[750];
   double CutPoint[375];
@@ -2043,9 +1928,7 @@ public:
 class hc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[383];
   double Children[766];
   double CutPoint[383];
@@ -2062,9 +1945,7 @@ public:
 class ic_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   double CutPredictorIndex[265];
   double Children[530];
@@ -2082,9 +1963,7 @@ public:
 class jc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   void b_init();
   void c_init();
   double CutPredictorIndex[373];
@@ -2103,9 +1982,7 @@ public:
 class kc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[253];
   double Children[506];
   double CutPoint[253];
@@ -2122,9 +1999,7 @@ public:
 class lc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[259];
   double Children[518];
   double CutPoint[259];
@@ -2141,9 +2016,7 @@ public:
 class mc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[257];
   double Children[514];
   double CutPoint[257];
@@ -2160,9 +2033,7 @@ public:
 class nc_CompactClassificationTree {
 public:
   void init();
-  void predict(const ::coder::array<double, 2U> &Xin,
-               ::coder::array<double, 1U> &labels,
-               ::coder::array<double, 2U> &scores) const;
+  double predict(const double Xin[280], double scores[18]) const;
   double CutPredictorIndex[399];
   double Children[798];
   double CutPoint[399];

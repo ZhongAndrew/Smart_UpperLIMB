@@ -30,7 +30,7 @@ class _DashboardPageState extends State<DashboardPage> {
       showTopToast(context, "正在推理新病患資料 (FT_s2)...");
 
       // 呼叫模組化後的 NativeService
-      await _nativeService.runS2Inference('assets/FT_s1.csv');
+      await _nativeService.runS2Inference('assets/FT_s2.bin');
 
       if (!mounted) return;
       showTopToast(context, "✅ FT_s2 推理完成，請查看 Console 輸出");

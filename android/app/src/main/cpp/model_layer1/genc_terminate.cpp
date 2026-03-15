@@ -5,12 +5,11 @@
 // File: genc_terminate.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 14:36:54
+// C/C++ source code generated on  : 14-Mar-2026 15:13:47
 //
 
 // Include Files
 #include "genc_terminate.h"
-#include "rt_nonfinite.h"
 
 // Function Definitions
 //

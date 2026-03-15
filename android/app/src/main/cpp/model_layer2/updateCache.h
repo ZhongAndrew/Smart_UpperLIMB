@@ -5,7 +5,7 @@
 // File: updateCache.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 12-Mar-2026 14:40:35
+// C/C++ source code generated on  : 14-Mar-2026 15:19:23
 //
 
 #ifndef UPDATECACHE_H
@@ -13,7 +13,6 @@
 
 // Include Files
 #include "rtwtypes.h"
-#include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
@@ -24,12 +23,9 @@ namespace classreg {
 namespace learning {
 namespace coder {
 namespace ensembleutils {
-void updateCache(const ::coder::array<double, 2U> &learnerscore,
-                 ::coder::array<double, 2U> &cachedScore,
-                 ::coder::array<double, 1U> &cachedWeights, bool &cached,
-                 const char combinerName[15],
-                 const ::coder::array<bool, 1U> &obsIndices,
-                 ::coder::array<double, 2U> &score);
+void updateCache(const double learnerscore[18], double cachedScore[18],
+                 double &cachedWeights, bool &cached,
+                 const char combinerName[15], double score[18]);
 
 }
 } // namespace coder
