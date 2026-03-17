@@ -53,51 +53,120 @@ class NativeService {
   Future<void> runS2Inference(String assetPath) async {
     if (!_isInitialized) init();
 
-    // 🌟 最關鍵的一步：在處理全新的受試者資料前，徹底洗掉 C++ 兩層模型的殘留記憶！
-    print("🧹 正在清空 Layer 1 與 Layer 2 內部特徵時間視窗 (Sliding Window)...");
+    print("🧹 正在清空內部狀態...");
     _resetL1();
     _resetL2();
 
-// 讀取二進制檔案
     final ByteData bytes = await rootBundle.load(assetPath);
     final Float64List floatList = bytes.buffer.asFloat64List();
-    final int numRows = floatList.length ~/ 280;
 
-    print("🚀 成功讀取二進制，共 $numRows 筆");
-
-    // 🌟 驗證關卡：印出前 5 個特徵，確認位元組沒有錯亂！
-    if (numRows > 0) {
-      print("=== 🐛 二進位黃金交叉比對 ===");
-      print(
-          "Feature 0~4: ${floatList[0]}, ${floatList[1]}, ${floatList[2]}, ${floatList[3]}, ${floatList[4]}");
-      print("============================");
-    }
+    // 每一行現在有 283 個數字 (280特徵 + L2標籤 + L1標籤 + 受試者ID)
+    final int numRows = floatList.length ~/ 283;
+    print("🚀 成功讀取驗證資料，共 $numRows 筆");
 
     final ptr = calloc<ffi.Double>(280);
 
+    // 準備統計變數
+    int correctL1 = 0,
+        correctL2 = 0;
+
+    // 建立 19x19 的混淆矩陣 (0~18 動作) 用來算 Pre, Sen, F1
+    List<List<int>> cm = List.generate(19, (_) => List.filled(19, 0));
+
+    // 準備記錄每位受試者的 Accuracy (用來做 T 檢定)
+    Map<int, int> subjectCorrect = {};
+    Map<int, int> subjectTotal = {};
+
     for (int r = 0; r < numRows; r++) {
+      // 1. 讀取前 280 個特徵並餵入指標 (包含 NaN 解藥)
       for (int i = 0; i < 280; i++) {
-        double val = floatList[r * 280 + i];
-
-        // 🌟 終極解藥：殺死所有 NaN！
-        if (val.isNaN || val.isInfinite) {
-          val = 0.0; // 將缺失值或無限大替換為平均值
-        }
-
+        double val = floatList[r * 283 + i];
+        if (val.isNaN || val.isInfinite) val = 0.0;
         ptr[i] = val;
       }
 
-      // 執行推論
-      double p1 = _predictL1(ptr);
-      int rawL2 = 0;
+      // 2. 讀取最後 3 個 Ground Truth 答案
+      int trueL2 = floatList[r * 283 + 280].toInt();
+      int trueL1 = floatList[r * 283 + 281].toInt();
+      int subjectId = floatList[r * 283 + 282].toInt();
 
-      if ((p1 - 1.0).abs() < 0.1) {
-        rawL2 = _predictL2(ptr).toInt();
+      // 3. 執行 C++ 模型預測
+      double predL1Double = _predictL1(ptr);
+      int predL1 = (predL1Double > 0.5) ? 1 : 0;
+      int predL2 = 0;
+      if (predL1 == 1) {
+        predL2 = _predictL2(ptr).toInt();
       }
 
-      if (r % 5 == 0) {
-        print("Row $r | L1: $p1 | L2: $rawL2");
+      // 4. 統計 L1 與 L2 正確率
+      if (predL1 == trueL1) correctL1++;
+      if (predL2 == trueL2) correctL2++;
+
+      // 記錄混淆矩陣 [實際][預測]
+      cm[trueL2][predL2]++;
+
+      // 記錄每位受試者的表現 (做 T-test 必備)
+      subjectTotal[subjectId] = (subjectTotal[subjectId] ?? 0) + 1;
+      if (predL2 == trueL2) {
+        subjectCorrect[subjectId] = (subjectCorrect[subjectId] ?? 0) + 1;
       }
     }
+
+    calloc.free(ptr);
+
+    // ==========================================
+    // 📊 計算與印出最終報告
+    // ==========================================
+    print("\n========== 🏆 模型驗證報告 ==========");
+    print("Layer 1 (動靜二元) Accuracy: ${(correctL1 / numRows * 100)
+        .toStringAsFixed(2)}%");
+    print("Layer 2 (詳細動作) Accuracy: ${(correctL2 / numRows * 100)
+        .toStringAsFixed(2)}%");
+
+    // 計算 Macro-Average Precision, Sensitivity (Recall), F1-Score
+    double macroPre = 0.0,
+        macroSen = 0.0,
+        macroF1 = 0.0;
+    int validClasses = 0;
+
+    for (int i = 0; i < 19; i++) {
+      int tp = cm[i][i];
+      int fn = 0,
+          fp = 0;
+      for (int j = 0; j < 19; j++) {
+        if (i != j) {
+          fn += cm[i][j]; // 實際是 i，被錯判成 j
+          fp += cm[j][i]; // 實際是 j，被錯判成 i
+        }
+      }
+
+      if (tp + fn > 0) { // 如果這個動作在測試集有出現過
+        double pre = (tp + fp == 0) ? 0.0 : tp / (tp + fp);
+        double sen = tp / (tp + fn);
+        double f1 = (pre + sen == 0) ? 0.0 : 2 * (pre * sen) / (pre + sen);
+
+        macroPre += pre;
+        macroSen += sen;
+        macroF1 += f1;
+        validClasses++;
+      }
+    }
+
+    macroPre /= validClasses;
+    macroSen /= validClasses;
+    macroF1 /= validClasses;
+
+    print("Macro-Precision: ${(macroPre * 100).toStringAsFixed(2)}%");
+    print("Macro-Sensitivity: ${(macroSen * 100).toStringAsFixed(2)}%");
+    print("Macro-F1 Score: ${(macroF1 * 100).toStringAsFixed(2)}%");
+
+    print("\n========== 🔬 各受試者 Accuracy (供 T-test 使用) ==========");
+    List<int> sortedSubjects = subjectTotal.keys.toList()
+      ..sort();
+    for (int s in sortedSubjects) {
+      double acc = subjectCorrect[s]! / subjectTotal[s]!;
+      print("Subject $s: ${(acc * 100).toStringAsFixed(2)}%");
+    }
+    print("==========================================");
   }
 }

@@ -63,6 +63,7 @@ flutter:
     - assets/FTGT_s1.csv
     - assets/FT_s2.csv
     - assets/FT_s2.bin
+    - assets/FT_GT.bin
     - assets/X_s1.csv
     - assets/FT_s3.csv
     - assets/FT_s1.csv
