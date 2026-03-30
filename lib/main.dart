@@ -6,7 +6,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    NativeService().init(); // 如果還是黑屏，就把這行加上雙斜線註解
+    NativeService().init();
   } catch (e) {
     print("Native 庫載入失敗，但不影響 UI: $e");
   }
@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         useMaterial3: true,
       ),
-      home: const LoginPage(), // 💡 確保這裡有指向 LoginPage
+      home: const LoginPage(),
     );
   }
 }
