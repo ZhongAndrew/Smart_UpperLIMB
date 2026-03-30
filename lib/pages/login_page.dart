@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main_system.dart'; // 這是包含 TabBar 的主系統容器檔案
+import 'main_system.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,128 +9,361 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // 控制器用於獲取輸入內容
-  final TextEditingController _userIdController = TextEditingController(text: 'doctor_wang');
-  final TextEditingController _passwordController = TextEditingController(text: '123456');
+  // 預設為登入模式
+  bool isLoginMode = true;
 
-  void _handleLogin() {
-    // 這裡未來可以加入 NativeService 或 API 的驗證邏輯
-    final String userId = _userIdController.text;
-    final String password = _passwordController.text;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
-    if (userId.isNotEmpty && password.isNotEmpty) {
-      // 登入成功，導向主系統頁面
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MainSystem()),
-      );
-    } else {
-      // 可以在這裡呼叫 showTopToast
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請輸入帳號與密碼')),
-      );
+  // 💡 新增：姓名/暱稱的輸入控制器
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _accountController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  // 💡 升級：測試資料庫現在會同時儲存「密碼」與「姓名」
+  static Map<String, Map<String, String>> mockDatabase = {
+    'doctor1@example.com': {'password': '123456aA', 'name': '王醫師'},
+    'user01@example.com': {'password': '0000aaaa', 'name': '李伯伯'},
+  };
+
+  // 驗證是否為有效的 Email 格式
+  bool _isEmailValid(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  // 驗證密碼：8~20 碼，包含英文與數字
+  bool _isPasswordValid(String password) {
+    return RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,20}$').hasMatch(password);
+  }
+
+  void _showTopSnackBar(String msg, {Color color = const Color(0xFF0D9488)}) {
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+
+    final entry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 20,
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, -50 * (1 - value)),
+                child: Opacity(opacity: value, child: child),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (entry.mounted) entry.remove();
+    });
+  }
+
+  void _submit() {
+    String name = _nameController.text.trim();
+    String account = _accountController.text.trim();
+    String password = _passwordController.text.trim();
+    String confirmPassword = _confirmPasswordController.text.trim();
+
+    if (account.isEmpty || password.isEmpty) {
+      _showTopSnackBar('⚠️ 帳號或密碼不能為空！', color: Colors.orange);
+      return;
     }
+
+    if (isLoginMode) {
+      // ===== 登入邏輯 =====
+      if (mockDatabase.containsKey(account) && mockDatabase[account]!['password'] == password) {
+        String userName = mockDatabase[account]!['name']!; // 💡 登入成功時，抓取儲存的姓名
+        _showTopSnackBar('✅ 登入成功！歡迎 $userName');
+        _navigateToMain(isGuest: false, userName: userName); // 💡 將姓名傳遞給主系統
+      } else {
+        _showTopSnackBar('❌ 帳號或密碼錯誤！', color: Colors.redAccent);
+      }
+    } else {
+      // ===== 註冊邏輯 =====
+      if (name.isEmpty) {
+        _showTopSnackBar('⚠️ 請輸入姓名或暱稱', color: Colors.orange);
+        return;
+      }
+
+      if (!_isEmailValid(account)) {
+        _showTopSnackBar('⚠️ 請輸入有效的 Email 信箱格式', color: Colors.orange);
+        return;
+      }
+
+      if (!_isPasswordValid(password)) {
+        _showTopSnackBar('⚠️ 密碼需為 8~20 碼，且包含英文與數字', color: Colors.orange);
+        return;
+      }
+
+      if (password != confirmPassword) {
+        _showTopSnackBar('⚠️ 兩次輸入的密碼不一致！', color: Colors.redAccent);
+        return;
+      }
+
+      if (mockDatabase.containsKey(account)) {
+        _showTopSnackBar('⚠️ 此信箱已經被註冊過了！', color: Colors.redAccent);
+      } else {
+        // 💡 註冊成功，將密碼與姓名同時存入資料庫
+        mockDatabase[account] = {'password': password, 'name': name};
+        _showTopSnackBar('✅ 註冊成功！請直接登入');
+        setState(() {
+          isLoginMode = true;
+          _passwordController.clear();
+          _confirmPasswordController.clear();
+        });
+      }
+    }
+  }
+
+  void _guestLogin() {
+    _showTopSnackBar('已使用訪客身分登入 (不會儲存紀錄)', color: Colors.orange);
+    _navigateToMain(isGuest: true, userName: '訪客');
+  }
+
+  void _navigateToMain({required bool isGuest, required String userName}) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => MainSystem(isGuest: isGuest, userName: userName),
+      ),
+    );
+  }
+
+  void _fillTestAccount() {
+    setState(() {
+      _accountController.text = 'doctor1@example.com';
+      _passwordController.text = '123456aA';
+    });
+    _showTopSnackBar('已自動帶入測試帳號！');
+  }
+
+  // 切換模式的動畫與狀態重置
+  void _switchMode(bool toLogin) {
+    setState(() {
+      isLoginMode = toLogin;
+      _nameController.clear(); // 清空姓名
+      _accountController.clear();
+      _passwordController.clear();
+      _confirmPasswordController.clear();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLogo(),
-              const SizedBox(height: 16),
-              const Text('智慧上肢檢測',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-              const Text('專業關節活動度分析系統',
-                  style: TextStyle(fontSize: 14, letterSpacing: 2, color: Color(0xFFCCFBF1))),
-              const SizedBox(height: 48),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo 與標題區塊
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: const Color(0xFF0D9488).withValues(alpha: 0.15), blurRadius: 20, spreadRadius: 5)],
+                  ),
+                  child: const Icon(Icons.monitor_heart_rounded, size: 64, color: Color(0xFF0D9488)),
+                ),
+                const SizedBox(height: 24),
+                const Text('智慧上肢檢測系統', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF1E293B), letterSpacing: 1.2)),
+                const SizedBox(height: 8),
+                const Text('關節活動度分析與追蹤', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                const SizedBox(height: 48),
 
-              _buildTextField('User ID / Email', '請輸入帳號', false, _userIdController),
-              const SizedBox(height: 16),
-              _buildTextField('Password', '請輸入密碼', true, _passwordController),
-              const SizedBox(height: 32),
+                // 獨立的表單區域
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(animation), child: child)),
+                  child: Column(
+                    key: ValueKey<bool>(isLoginMode),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 狀態標題
+                      Text(
+                          isLoginMode ? '登入' : '註冊新帳號',
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))
+                      ),
+                      const SizedBox(height: 20),
 
-              _buildLoginButton(),
-              const SizedBox(height: 24),
-              const Text('Version 3.0.0 • Medical Use Only',
-                  style: TextStyle(fontSize: 12, color: Colors.white60)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+                      // 💡 註冊模式專屬：「姓名/暱稱」欄位
+                      if (!isLoginMode) ...[
+                        TextField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: '顯示姓名或暱稱',
+                            prefixIcon: const Icon(Icons.person_outline_rounded),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
-  // ---------------- UI 組件拆解 ----------------
+                      // 信箱輸入框
+                      TextField(
+                        controller: _accountController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: '電子信箱 (Email)',
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-  Widget _buildLogo() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: const Icon(Icons.monitor_heart, size: 40, color: Color(0xFFF59E0B)),
-    );
-  }
+                      // 密碼輸入框
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: !_isPasswordVisible,
+                        maxLength: 20,
+                        decoration: InputDecoration(
+                          labelText: '密碼',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
+                            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          counterText: '',
+                          helperText: isLoginMode ? null : '8~20 碼，需包含英文與數字',
+                          helperStyle: const TextStyle(color: Color(0xFF0D9488)),
+                        ),
+                      ),
 
-  Widget _buildTextField(String label, String hint, bool isPassword, TextEditingController controller) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Color(0xFFF0FDFA), fontSize: 12, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          obscureText: isPassword,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.1),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.2))
+                      // 註冊模式專屬：「確認密碼」欄位
+                      if (!isLoginMode) ...[
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: !_isConfirmPasswordVisible,
+                          maxLength: 20,
+                          decoration: InputDecoration(
+                            labelText: '再次確認密碼',
+                            prefixIcon: const Icon(Icons.lock_reset_outlined),
+                            suffixIcon: IconButton(
+                              icon: Icon(_isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
+                              onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                            ),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            counterText: '',
+                          ),
+                        ),
+                      ],
+
+                      // 測試帳號捷徑 (僅登入模式顯示)
+                      if (isLoginMode)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _fillTestAccount,
+                            child: const Text('使用測試帳號快速登入', style: TextStyle(color: Colors.grey, fontSize: 13, decoration: TextDecoration.underline)),
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 32),
+
+                      // 提交按鈕
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0D9488),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 2,
+                          ),
+                          child: Text(isLoginMode ? '登入' : '註冊', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 底部狀態切換文字按鈕
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(isLoginMode ? '還沒有帳號嗎？' : '已經有帳號了？', style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                          TextButton(
+                            onPressed: () => _switchMode(!isLoginMode),
+                            child: Text(
+                                isLoginMode ? '前往註冊' : '返回登入',
+                                style: const TextStyle(color: Color(0xFF0D9488), fontWeight: FontWeight.bold, fontSize: 15)
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                const Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.black12, thickness: 1)),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('或', style: TextStyle(color: Colors.grey))),
+                    Expanded(child: Divider(color: Colors.black12, thickness: 1)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // 訪客登入按鈕
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: _guestLogin,
+                    icon: const Icon(Icons.sensor_door_outlined, size: 20),
+                    label: const Text('作為訪客繼續 (不儲存歷史紀錄)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey.shade700,
+                      side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white)
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildLoginButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF0D9488),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 0,
-        ),
-        onPressed: _handleLogin,
-        child: const Text('登入系統 (Login)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ),
     );
   }

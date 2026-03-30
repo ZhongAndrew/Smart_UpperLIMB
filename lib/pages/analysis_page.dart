@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import '../models/app_models.dart'; // 引用剛才定義的資料結構
-import '../widgets/rom_bar_chart.dart'; // 建議將長條圖獨立成 widget
-import '../widgets/common_ui.dart'; // 存放 showTopToast 等
+import '../models/app_models.dart';
+import '../widgets/rom_bar_chart.dart';
 
 class AnalysisPage extends StatefulWidget {
   final bool hasData;
   final AssessmentReport? reportData;
+  final String userName; // 接收使用者名稱
   final Function(int) onSwitchTab;
   final Function(AssessmentReport) onReportSaved;
 
@@ -14,6 +13,7 @@ class AnalysisPage extends StatefulWidget {
     super.key,
     required this.hasData,
     this.reportData,
+    required this.userName,
     required this.onSwitchTab,
     required this.onReportSaved,
   });
@@ -23,171 +23,157 @@ class AnalysisPage extends StatefulWidget {
 }
 
 class _AnalysisPageState extends State<AnalysisPage> {
-  bool isSaving = false;
-
-  void _handleSave() async {
-    if (widget.reportData == null) return;
-
-    setState(() => isSaving = true);
-    // 模擬儲存延遲
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-    setState(() => isSaving = false);
-
-    // 呼叫父層傳入的儲存邏輯
-    widget.onReportSaved(widget.reportData!);
-    showTopToast(context, '報告已成功儲存至歷史紀錄');
-    widget.onSwitchTab(3); // 跳轉至歷史紀錄頁
-  }
+  final List<String> _targetExercises = [
+    '前平舉', '側平舉', '後平舉',
+    '水平外展', '水平內收',
+    '前向肩輪', '側向肩輪'
+  ];
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.hasData || widget.reportData == null) {
-      return _buildEmptyState();
+    // 狀態 1：無資料時顯示空畫面
+    if (!widget.hasData || widget.reportData == null || widget.reportData!.results.isEmpty) {
+      return SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.analytics_outlined, size: 80, color: Colors.grey.shade300),
+              const SizedBox(height: 16),
+              Text('目前尚無分析報告\n請先前往「設備連線」或「動作錄製」',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 16)
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => widget.onSwitchTab(0),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white,
+                  shape: const StadiumBorder(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('前往連線設備', style: TextStyle(fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+        ),
+      );
     }
 
-    final report = widget.reportData!;
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            // 頂部大標題與使用者名稱
+            Padding(
+              padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('綜合分析報告', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                  Text(widget.userName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildHeaderCard(report),
-        const SizedBox(height: 24),
-        const Text('本次數據分析總覽 (左右平均幅度)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-        const SizedBox(height: 12),
-        // 使用我們定義的資料結構傳入長條圖組件
-        RomComparisonChart(results: report.results),
-        const SizedBox(height: 24),
-        const Text('每下動作詳細解析',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-        const SizedBox(height: 12),
-        // 疊代顯示每一項動作的細節
-        ...report.results.map((res) => _buildActionDetailCard(res)),
-        const SizedBox(height: 24),
-        _buildSaveButton(),
-        const SizedBox(height: 32),
-      ],
-    );
-  }
+            // 測量總結卡片
+            _buildSummaryCard(),
+            const SizedBox(height: 24),
 
-  // ---------------- UI 組件拆解 ----------------
+            // 視覺化橫向長條圖與詳細數據 (交給獨立組件)
+            RomComparisonChart(
+              results: widget.reportData!.results,
+              targetExercises: _targetExercises,
+            ),
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.description_outlined, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text('尚無評估報告', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('請先完成測量或匯入 CSV 數據', style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => widget.onSwitchTab(1),
-            child: const Text('前往錄製頁面'),
-          ),
-        ],
+            const SizedBox(height: 24),
+
+            // 底部：儲存紀錄按鈕
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white,
+                  shape: const StadiumBorder(), // 統一改為膠囊形狀
+                  elevation: 0,
+                ),
+                onPressed: () => widget.onReportSaved(widget.reportData!),
+                icon: const Icon(Icons.save_rounded),
+                label: const Text('儲存本次報告', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeaderCard(AssessmentReport report) {
+  // 建立測量總結卡片
+  Widget _buildSummaryCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF0D9488), Color(0xFF0F766E)]),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('復健綜合報告', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _infoTile('總評估時間', report.totalTime),
-              _infoTile('受測者', '陳以謙 (Chen Yi-Chian)'), // 從資料來源帶入用戶名
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoTile(String label, String value) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionDetailCard(ExerciseResult data) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: ExpansionTile(
-        title: Text(data.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('類別: ${data.type == 'complex' ? '肩輪運動' : '標準平舉'}'),
+      child: Row(
         children: [
-          _buildSideList('左側', data.left, data.type == 'complex'),
-          const Divider(),
-          _buildSideList('右側', data.right, data.type == 'complex'),
-          const SizedBox(height: 12),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSideList(String side, List<RepData> reps, bool isComplex) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(side, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
-          ...reps.map((r) => Padding(
-            padding: const EdgeInsets.only(top: 4),
+          Expanded(
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('第 ${r.rep} 次${isComplex ? ' (${r.dir})' : ''}', style: const TextStyle(fontSize: 12)),
-                Text('${r.start}° → ${r.end}° (幅度: ${r.rom}°)',
-                    style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: const Color(0xFF0D9488).withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.calendar_today_rounded, color: Color(0xFF0D9488), size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('測量日期', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 2),
+                      Text(widget.reportData!.fullDate, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                    ],
+                  ),
+                ),
               ],
             ),
-          )),
+          ),
+          Container(height: 40, width: 1, color: Colors.grey.shade200),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.blue.shade50, shape: BoxShape.circle),
+                  child: Icon(Icons.timer_rounded, color: Colors.blue.shade600, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('總時長', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const SizedBox(height: 2),
+                      Text(widget.reportData!.totalTime, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0D9488),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onPressed: isSaving ? null : _handleSave,
-        icon: isSaving
-            ? const CupertinoActivityIndicator(color: Colors.white)
-            : const Icon(Icons.save, color: Colors.white),
-        label: const Text('儲存本次評估報告',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
