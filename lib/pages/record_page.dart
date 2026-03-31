@@ -8,12 +8,14 @@ enum RecordState { initial, calibrated, recording, completed }
 
 class RecordPage extends StatefulWidget {
   final List<Sensor> sensors;
+  final bool isSynced; // 💡 接收目前的同步狀態
   final Function(int) onSwitchTab;
   final Function(AssessmentReport) onAnalysisCompleted;
 
   const RecordPage({
     super.key,
     required this.sensors,
+    required this.isSynced, // 💡 新增的必填參數
     required this.onSwitchTab,
     required this.onAnalysisCompleted,
   });
@@ -59,7 +61,8 @@ class _RecordPageState extends State<RecordPage> {
             builder: (animCtx, value, child) {
               return Transform.translate(
                 offset: Offset(0, -50 * (1 - value)),
-                child: Opacity(opacity: value, child: child),
+                // 💡 加上 .clamp(0.0, 1.0) 限制透明度範圍
+                child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
               );
             },
             child: Container(
@@ -375,8 +378,39 @@ class _RecordPageState extends State<RecordPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 💡 防呆第一關：如果尚未同步，直接顯示鎖定畫面 (不會有波型)
+    if (!widget.isSynced) {
+      return Container(
+        color: const Color(0xFFF8FAFC),
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.sync_disabled_rounded, size: 80, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text('等待設備同步', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+            const SizedBox(height: 8),
+            Text('請先至「設備」頁面打開開關，\n並完成「一鍵同步」以接收資料。', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500, height: 1.5)),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => widget.onSwitchTab(0), // 跳回設備頁面
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              label: const Text('前往設備連線', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D9488),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            )
+          ],
+        ),
+      );
+    }
+
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
 
+    // 💡 防呆第二關：已經同步，但沒有任何連線設備時顯示錯誤畫面
     if (connectedCount == 0) {
       return _buildNoSensorView();
     }

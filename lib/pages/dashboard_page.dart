@@ -5,12 +5,16 @@ import '../services/native_service.dart';
 
 class DashboardPage extends StatefulWidget {
   final List<Sensor> sensors;
+  final bool isSynced; // 💡 接收目前的同步狀態
+  final Function(bool) onSyncStatusChanged; // 💡 控制同步狀態的方法
   final VoidCallback onStateChanged;
   final Function(AssessmentReport) onAnalysisCompleted;
 
   const DashboardPage({
     super.key,
     required this.sensors,
+    required this.isSynced,
+    required this.onSyncStatusChanged,
     required this.onStateChanged,
     required this.onAnalysisCompleted,
   });
@@ -43,7 +47,7 @@ class _DashboardPageState extends State<DashboardPage> {
             builder: (context, value, child) {
               return Transform.translate(
                 offset: Offset(0, -50 * (1 - value)),
-                child: Opacity(opacity: value, child: child),
+                child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
               );
             },
             child: Container(
@@ -71,9 +75,8 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  // 💡 全新的一鍵同步邏輯：直接針對已經打開開關的感測器進行同步 (不跳確認視窗)
+  // 💡 一鍵同步邏輯
   void _handleOneKeySync() async {
-    // 檢查目前有幾個感測器開關是打開的
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
 
     if (connectedCount == 0) {
@@ -81,34 +84,23 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    // 顯示載入動畫
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => const Center(child: CupertinoActivityIndicator(radius: 20, color: Colors.white)),
     );
 
-    // 模擬同步傳輸時間
     await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
-    Navigator.pop(context); // 關閉載入動畫
+    Navigator.pop(context);
 
+    widget.onSyncStatusChanged(true); // 💡 告訴主系統：同步已完成！
     widget.onStateChanged();
-    _showTopSnackBar('✅ 已成功同步 $connectedCount 個感測器！準備就緒。');
+    _showTopSnackBar('✅ 已成功同步 $connectedCount 個感測器！請前往錄製頁面。');
   }
 
-  Future<void> _handleS2Inference() async {
-    try {
-      _showTopSnackBar("正在推理新病患資料 (FT_s2)...", color: Colors.orange);
-      await _nativeService.runS2Inference('assets/FT_GT.bin');
-      if (!mounted) return;
-      _showTopSnackBar("✅ FT_s2 推理完成，請查看 Console 輸出");
-    } catch (e) {
-      _showTopSnackBar("❌ 推理失敗: $e", color: Colors.red);
-    }
-  }
-
+  // 修改感測器名稱
   void _showRenameDialog(Sensor sensor) {
     TextEditingController nameController = TextEditingController(text: sensor.name);
 
@@ -148,6 +140,17 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Future<void> _handleS2Inference() async {
+    try {
+      _showTopSnackBar("正在推理新病患資料 (FT_s2)...", color: Colors.orange);
+      await _nativeService.runS2Inference('assets/FT_GT.bin');
+      if (!mounted) return;
+      _showTopSnackBar("✅ FT_s2 推理完成，請查看 Console 輸出");
+    } catch (e) {
+      _showTopSnackBar("❌ 推理失敗: $e", color: Colors.red);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
@@ -158,19 +161,32 @@ class _DashboardPageState extends State<DashboardPage> {
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
-          // 💡 1. 移除佔版面的大橫幅，直接從快捷操作面板開始
           Row(
             children: [
-              // 💡 按鈕直接綁定新的同步邏輯
-              Expanded(child: _buildQuickActionButton('一鍵同步', Icons.sync_rounded, const Color(0xFF3B82F6), _handleOneKeySync)),
+              // 💡 如果已同步，按鈕樣式會變成綠色打勾
+              Expanded(
+                  child: _buildQuickActionButton(
+                      widget.isSynced ? '同步完成 (可重整)' : '一鍵同步',
+                      widget.isSynced ? Icons.check_circle_rounded : Icons.sync_rounded,
+                      widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                      _handleOneKeySync
+                  )
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildQuickActionButton('匯入 CSV', Icons.upload_file_rounded, const Color(0xFF0D9488), () => _showCSVSelectionDialog(context))),
+              Expanded(
+                  child: _buildQuickActionButton(
+                      '匯入 CSV',
+                      Icons.upload_file_rounded,
+                      const Color(0xFF0D9488),
+                          () => _showCSVSelectionDialog(context)
+                  )
+              ),
             ],
           ),
 
           const SizedBox(height: 32),
 
-          // 💡 2. 列表標題 (整合連線數量的徽章)
+          // 標題區域
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -193,12 +209,12 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(height: 16),
 
-          // 3. 橫向長條型設備卡片清單
+          // 設備清單卡片
           ...widget.sensors.map((sensor) => _buildHorizontalSensorCard(sensor)),
 
           const SizedBox(height: 32),
 
-          // 底部 AI 測試按鈕
+          // 開發者工具
           _buildInferenceButton(),
           const SizedBox(height: 24),
         ],
@@ -206,7 +222,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // 快捷操作按鈕
   Widget _buildQuickActionButton(String title, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -223,20 +238,23 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B))),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
           ],
         ),
       ),
     );
   }
 
-  // 全寬度橫向條列感測器卡片
   Widget _buildHorizontalSensorCard(Sensor sensor) {
     bool isConnected = sensor.isConnected;
 
     return GestureDetector(
       onTap: () {
         setState(() => sensor.isConnected = !sensor.isConnected);
+        // 💡 防呆：如果關閉任何感測器，系統會自動解除「同步狀態」
+        if (!sensor.isConnected && widget.isSynced) {
+          widget.onSyncStatusChanged(false);
+        }
         widget.onStateChanged();
         _showTopSnackBar(sensor.isConnected ? '成功連接：${sensor.name}' : '已中斷：${sensor.name}');
       },
@@ -252,7 +270,6 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         child: Row(
           children: [
-            // 左側：狀態大圖標
             Container(
               width: 50,
               height: 50,
@@ -267,8 +284,6 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(width: 16),
-
-            // 中間：文字資訊區
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,13 +320,15 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
             ),
-
-            // 右側：連線開關
             CupertinoSwitch(
               value: isConnected,
               activeColor: const Color(0xFF0D9488),
               onChanged: (bool val) {
                 setState(() => sensor.isConnected = val);
+                // 💡 防呆：如果關閉任何感測器，系統會自動解除「同步狀態」
+                if (!val && widget.isSynced) {
+                  widget.onSyncStatusChanged(false);
+                }
                 widget.onStateChanged();
                 _showTopSnackBar(val ? '成功連接：${sensor.name}' : '已中斷：${sensor.name}');
               },
@@ -339,6 +356,9 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // ============================================================================
+  // CSV 匯入模擬相關功能
+  // ============================================================================
   void _showLoadingAndAnalyze(BuildContext context) async {
     showDialog(
       context: context,
