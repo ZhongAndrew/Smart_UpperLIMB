@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main_system.dart';
+import 'profile_setup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,17 +16,24 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  // 💡 新增：姓名/暱稱的輸入控制器
-  final TextEditingController _nameController = TextEditingController();
+  // 控制器宣告
   final TextEditingController _accountController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  // 💡 升級：測試資料庫現在會同時儲存「密碼」與「姓名」
+  // 模擬資料庫 (僅供測試登入)
   static Map<String, Map<String, String>> mockDatabase = {
     'doctor1@example.com': {'password': '123456aA', 'name': '王醫師'},
     'user01@example.com': {'password': '0000aaaa', 'name': '李伯伯'},
   };
+
+  @override
+  void dispose() {
+    _accountController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   // 驗證是否為有效的 Email 格式
   bool _isEmailValid(String email) {
@@ -37,6 +45,7 @@ class _LoginPageState extends State<LoginPage> {
     return RegExp(r'^(?=.*[A-Za-z])(?=.*\d).{8,20}$').hasMatch(password);
   }
 
+  // 頂部通知訊息
   void _showTopSnackBar(String msg, {Color color = const Color(0xFF0D9488)}) {
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
@@ -84,7 +93,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _submit() {
-    String name = _nameController.text.trim();
     String account = _accountController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
@@ -97,19 +105,14 @@ class _LoginPageState extends State<LoginPage> {
     if (isLoginMode) {
       // ===== 登入邏輯 =====
       if (mockDatabase.containsKey(account) && mockDatabase[account]!['password'] == password) {
-        String userName = mockDatabase[account]!['name']!; // 💡 登入成功時，抓取儲存的姓名
+        String userName = mockDatabase[account]!['name']!;
         _showTopSnackBar('✅ 登入成功！歡迎 $userName');
-        _navigateToMain(isGuest: false, userName: userName); // 💡 將姓名傳遞給主系統
+        _navigateToMain(isGuest: false, userName: userName);
       } else {
         _showTopSnackBar('❌ 帳號或密碼錯誤！', color: Colors.redAccent);
       }
     } else {
-      // ===== 註冊邏輯 =====
-      if (name.isEmpty) {
-        _showTopSnackBar('⚠️ 請輸入姓名或暱稱', color: Colors.orange);
-        return;
-      }
-
+      // ===== 註冊邏輯的第一步 =====
       if (!_isEmailValid(account)) {
         _showTopSnackBar('⚠️ 請輸入有效的 Email 信箱格式', color: Colors.orange);
         return;
@@ -125,18 +128,13 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      if (mockDatabase.containsKey(account)) {
-        _showTopSnackBar('⚠️ 此信箱已經被註冊過了！', color: Colors.redAccent);
-      } else {
-        // 💡 註冊成功，將密碼與姓名同時存入資料庫
-        mockDatabase[account] = {'password': password, 'name': name};
-        _showTopSnackBar('✅ 註冊成功！請直接登入');
-        setState(() {
-          isLoginMode = true;
-          _passwordController.clear();
-          _confirmPasswordController.clear();
-        });
-      }
+      // 註冊成功，跳轉到基本資料設定頁面填寫詳細資訊
+      _showTopSnackBar('✅ 帳號建立成功！請填寫基本資料');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => ProfileSetupPage(email: account),
+        ),
+      );
     }
   }
 
@@ -165,7 +163,6 @@ class _LoginPageState extends State<LoginPage> {
   void _switchMode(bool toLogin) {
     setState(() {
       isLoginMode = toLogin;
-      _nameController.clear(); // 清空姓名
       _accountController.clear();
       _passwordController.clear();
       _confirmPasswordController.clear();
@@ -213,21 +210,6 @@ class _LoginPageState extends State<LoginPage> {
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))
                       ),
                       const SizedBox(height: 20),
-
-                      // 💡 註冊模式專屬：「姓名/暱稱」欄位
-                      if (!isLoginMode) ...[
-                        TextField(
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: '顯示姓名或暱稱',
-                            prefixIcon: const Icon(Icons.person_outline_rounded),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
 
                       // 信箱輸入框
                       TextField(
@@ -310,7 +292,7 @@ class _LoginPageState extends State<LoginPage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             elevation: 2,
                           ),
-                          child: Text(isLoginMode ? '登入' : '註冊', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                          child: Text(isLoginMode ? '登入' : '下一步', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2)),
                         ),
                       ),
                       const SizedBox(height: 16),
