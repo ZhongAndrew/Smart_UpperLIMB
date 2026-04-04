@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart'; // 💡 新增這行：用來限制只能輸入數字
 import 'dart:math' as math;
 import '../models/app_models.dart';
 import '../widgets/rom_bar_chart.dart';
@@ -12,7 +14,7 @@ class HistoryPage extends StatefulWidget {
     super.key,
     required this.isGuest,
     required this.historyRecords,
-    required this.userName, // 強制使用傳入的帳戶名稱
+    required this.userName,
   });
 
   @override
@@ -22,14 +24,19 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   String _selectedExercise = '前平舉';
 
-  String? _selectedYear;
-  String? _selectedMonth;
+  // 💡 替換：移除 String 變數，改用文字輸入控制器
+  final TextEditingController _yearController = TextEditingController();
+  final TextEditingController _monthController = TextEditingController();
 
   // 互動圖表專用：目前被點擊/滑動到的資料節點 Index
   int? _touchedIndex;
 
-  // 自動滑動專用：控制圖表左右滑動的控制器
-  final ScrollController _scrollController = ScrollController();
+  // 圖表左右滑動的控制器
+  final ScrollController _chartScrollController = ScrollController();
+
+  // 💡 新增：下方歷史紀錄列表的滑動控制器 (用來偵測是否滑到底部)
+  final ScrollController _listScrollController = ScrollController();
+  bool _isLoadingMore = false; // 控制是否正在顯示底部載入動畫
 
   final List<String> _targetExercises = [
     '前平舉', '側平舉', '後平舉',
@@ -40,14 +47,15 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    // 頁面初次載入時，自動滑動到圖表最右側 (最新紀錄)
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
+
+    // 💡 新增：監聽列表滑動事件
+    _listScrollController.addListener(_onListScroll);
   }
 
   @override
   void didUpdateWidget(HistoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 當有新的資料儲存進來時，再次自動滑動到最右側
     if (oldWidget.historyRecords.length != widget.historyRecords.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
     }
@@ -55,43 +63,110 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _chartScrollController.dispose();
+    _listScrollController.dispose();
+    // 💡 記得釋放控制器記憶體
+    _yearController.dispose();
+    _monthController.dispose();
     super.dispose();
   }
 
-  // 滑動到圖表最右側的邏輯
+  // 💡 新增：與其他頁面統一的上方通知功能
+  void _showTopSnackBar(String msg, {Color color = const Color(0xFF0D9488)}) {
+    if (!mounted) return;
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 20,
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, -50 * (1 - value)),
+                child: Opacity(opacity: value.clamp(0.0, 1.0), child: child),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (entry.mounted) entry.remove();
+    });
+  }
+
+  // 💡 新增：滑動到底部的偵測邏輯 (模擬向資料庫請求下一頁)
+  void _onListScroll() {
+    // 當滑動距離 >= 最大可滑動距離時 (代表到底了)
+    if (_listScrollController.position.pixels >= _listScrollController.position.maxScrollExtent - 20) {
+      if (!_isLoadingMore) {
+        _loadMoreData();
+      }
+    }
+  }
+
+  // 💡 新增：模擬向資料庫載入更多資料的動畫
+  Future<void> _loadMoreData() async {
+    setState(() => _isLoadingMore = true);
+
+    // 模擬網路連線等待時間 (1.5秒)
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) return;
+    setState(() => _isLoadingMore = false);
+
+    // 💡 替換：改用上方通知，保持全系統 UI 體驗一致
+    _showTopSnackBar('✅ 已從資料庫載入更舊的歷史紀錄！');
+  }
+
   void _scrollToLatest() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+    if (_chartScrollController.hasClients) {
+      _chartScrollController.animateTo(
+        _chartScrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeOutCubic,
       );
     }
   }
 
-  List<String> get _availableYears {
-    Set<String> years = {};
-    for (var r in widget.historyRecords) {
-      if (r.fullDate.length >= 4) years.add(r.fullDate.substring(0, 4));
-    }
-    List<String> sortedYears = years.toList()..sort((a, b) => b.compareTo(a));
-    return sortedYears;
-  }
+  // 💡 移除：_availableYears 與 _availableMonths (因為不需要下拉選單了)
 
-  List<String> get _availableMonths {
-    Set<String> months = {};
-    for (var r in widget.historyRecords) {
-      if (r.fullDate.length >= 7) months.add(r.fullDate.substring(5, 7));
-    }
-    List<String> sortedMonths = months.toList()..sort();
-    return sortedMonths;
-  }
-
+  // 💡 替換：根據輸入框的文字進行動態篩選
   List<AssessmentReport> get _filteredRecords {
+    String yearText = _yearController.text.trim();
+    String monthText = _monthController.text.trim();
+
     return widget.historyRecords.where((r) {
-      bool matchYear = _selectedYear == null || r.fullDate.startsWith(_selectedYear!);
-      bool matchMonth = _selectedMonth == null || (r.fullDate.length >= 7 && r.fullDate.substring(5, 7) == _selectedMonth);
+      // 若年份框有輸入，才比對前綴
+      bool matchYear = yearText.isEmpty || r.fullDate.startsWith(yearText);
+      // 若月份框有輸入，自動補零 (例如 2 會變 02) 並比對
+      bool matchMonth = monthText.isEmpty || (r.fullDate.length >= 7 && r.fullDate.substring(5, 7) == monthText.padLeft(2, '0'));
+
       return matchYear && matchMonth;
     }).toList();
   }
@@ -118,7 +193,6 @@ class _HistoryPageState extends State<HistoryPage> {
               children: [
                 const Text('歷史紀錄', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                 const SizedBox(width: 16),
-                // 💡 防呆修正：避免頂部 Email 過長導致破版
                 Expanded(
                   child: Text(
                     widget.userName,
@@ -147,9 +221,6 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  // =========================================================================
-  // 上半部：單項動作角度趨勢區塊 (包含互動 Tooltip)
-  // =========================================================================
   Widget _buildTrendSection() {
     List<AssessmentReport> chronologicalRecords = widget.historyRecords.reversed.toList();
 
@@ -169,7 +240,6 @@ class _HistoryPageState extends State<HistoryPage> {
       return ChartDataPoint(label, lAvg, rAvg);
     }).toList();
 
-    // 計算圖表實際總寬度
     double chartWidth = math.max(MediaQuery.of(context).size.width - 92, chartData.length * 65.0);
 
     return Container(
@@ -183,7 +253,6 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 標題與提示
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -194,7 +263,6 @@ class _HistoryPageState extends State<HistoryPage> {
                   const Text('單項動作角度趨勢', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
                 ],
               ),
-              // 提示使用者可以互動
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
@@ -228,7 +296,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   if (newValue != null) {
                     setState(() {
                       _selectedExercise = newValue;
-                      _touchedIndex = null; // 切換動作時隱藏 Tooltip
+                      _touchedIndex = null;
                     });
                   }
                 },
@@ -256,7 +324,6 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
           const SizedBox(height: 20),
 
-          // 互動折線圖區塊
           SizedBox(
             height: 160,
             child: Row(
@@ -275,14 +342,13 @@ class _HistoryPageState extends State<HistoryPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: SingleChildScrollView(
-                    controller: _scrollController, // 綁定滑動控制器
+                    controller: _chartScrollController,
                     scrollDirection: Axis.horizontal,
                     child: GestureDetector(
-                      // 擷取使用者的點擊與滑動座標，轉換成對應的節點 Index
                       onPanDown: (details) => _handleChartTouch(details.localPosition, chartWidth, chartData.length),
                       onPanUpdate: (details) => _handleChartTouch(details.localPosition, chartWidth, chartData.length),
                       onTapUp: (_) => Future.delayed(const Duration(seconds: 3), () {
-                        if (mounted) setState(() => _touchedIndex = null); // 點擊後3秒自動隱藏
+                        if (mounted) setState(() => _touchedIndex = null);
                       }),
                       child: SizedBox(
                         width: chartWidth,
@@ -291,7 +357,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           size: Size.infinite,
                           painter: _TrendPainter(
                             data: chartData,
-                            touchedIndex: _touchedIndex, // 傳遞游標位置
+                            touchedIndex: _touchedIndex,
                           ),
                         ),
                       ),
@@ -306,7 +372,6 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  // 計算使用者滑到哪一個節點的邏輯
   void _handleChartTouch(Offset localPosition, double chartWidth, int dataLength) {
     if (dataLength == 0) return;
     double stepX = chartWidth / math.max(1, dataLength);
@@ -318,9 +383,6 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
-  // =========================================================================
-  // 下半部：[年]/[月]篩選器與精美歷史紀錄清單
-  // =========================================================================
   Widget _buildListSection() {
     List<AssessmentReport> displayRecords = _filteredRecords;
 
@@ -332,35 +394,30 @@ class _HistoryPageState extends State<HistoryPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('詳細歷史紀錄', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-              Row(
-                children: [
-                  _buildDropdownPicker(
-                      hint: '年',
-                      value: _selectedYear,
-                      items: _availableYears,
-                      onChanged: (val) => setState(() => _selectedYear = val)
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text('/', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                  ),
-                  _buildDropdownPicker(
-                      hint: '月',
-                      value: _selectedMonth,
-                      items: _availableMonths,
-                      onChanged: (val) => setState(() => _selectedMonth = val)
-                  ),
-                ],
-              ),
+              // 💡 替換：使用帶有清除功能的文字輸入篩選器
+              _buildYearMonthFilter(),
             ],
           ),
         ),
 
         Expanded(
           child: ListView.builder(
+            controller: _listScrollController, // 💡 綁定滑動控制器
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: displayRecords.length,
+            // 💡 如果正在載入中，列表長度 +1 (為了顯示最底部的轉圈圈)
+            itemCount: displayRecords.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
+
+              // 💡 繪製最底部的載入動畫
+              if (index == displayRecords.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: CupertinoActivityIndicator(radius: 16, color: Color(0xFF0D9488)),
+                  ),
+                );
+              }
+
               final report = displayRecords[index];
               return GestureDetector(
                 onTap: () => _navigateToDetail(report),
@@ -379,7 +436,6 @@ class _HistoryPageState extends State<HistoryPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // 💡 防呆修正：使用 Expanded 包裝，超出時自動變成 ... 刪節號
                           Expanded(
                             child: Text(
                               '${widget.userName}的復健紀錄',
@@ -388,7 +444,7 @@ class _HistoryPageState extends State<HistoryPage> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8), // 給點空間避免靠太近
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(color: const Color(0xFF0D9488).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
@@ -448,27 +504,81 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  Widget _buildDropdownPicker({required String hint, required String? value, required List<String> items, required Function(String?) onChanged}) {
+  // 💡 替換：帶有清除按鈕的「年/月」文字輸入框 UI
+  Widget _buildYearMonthFilter() {
+    bool hasFilter = _yearController.text.isNotEmpty || _monthController.text.isNotEmpty;
+
+    return Row(
+      children: [
+        if (hasFilter)
+          GestureDetector(
+            onTap: () => setState(() {
+              _yearController.clear();
+              _monthController.clear();
+              // 清除時收起鍵盤
+              FocusScope.of(context).unfocus();
+            }),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Icon(Icons.cancel, color: Colors.grey.shade400, size: 22),
+            ),
+          ),
+        Row(
+          children: [
+            _buildTextFieldFilter(
+                hint: 'YYYY',
+                controller: _yearController,
+                maxLength: 4,
+                width: 60
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6.0),
+              child: Text('/', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            ),
+            _buildTextFieldFilter(
+                hint: 'MM',
+                controller: _monthController,
+                maxLength: 2,
+                width: 45
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 💡 全新的文字輸入框組件
+  Widget _buildTextFieldFilter({required String hint, required TextEditingController controller, required int maxLength, required double width}) {
+    bool hasValue = controller.text.isNotEmpty;
+
     return Container(
+      width: width,
       height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: hasValue ? const Color(0xFF0D9488) : Colors.grey.shade300),
           borderRadius: BorderRadius.circular(10)
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          hint: Text(hint, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
-          icon: const SizedBox.shrink(),
-          alignment: Alignment.center,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
-          onChanged: onChanged,
-          items: [
-            DropdownMenuItem<String>(value: null, child: Text(hint, style: TextStyle(color: Colors.grey.shade500))),
-            ...items.map((String item) => DropdownMenuItem<String>(value: item, child: Text(item))).toList(),
-          ],
+      child: Center(
+        child: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly], // 💡 限制只能輸入數字
+          maxLength: maxLength,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400, fontWeight: FontWeight.bold),
+            counterText: '', // 隱藏底部字數計算器
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+            isDense: true,
+          ),
+          onChanged: (val) {
+            // 💡 每次輸入文字時，即時觸發 setState 來動態篩選列表
+            setState(() {});
+          },
         ),
       ),
     );
@@ -495,7 +605,7 @@ class _HistoryPageState extends State<HistoryPage> {
 }
 
 // =========================================================================
-// 圖表繪製與資料模型 (新增 Tooltip 小視窗繪製邏輯)
+// 圖表繪製與資料模型
 // =========================================================================
 class ChartDataPoint {
   final String label;
@@ -506,7 +616,7 @@ class ChartDataPoint {
 
 class _TrendPainter extends CustomPainter {
   final List<ChartDataPoint> data;
-  final int? touchedIndex; // 接收目前使用者觸碰的節點位置
+  final int? touchedIndex;
 
   _TrendPainter({required this.data, this.touchedIndex});
 
@@ -526,7 +636,6 @@ class _TrendPainter extends CustomPainter {
     final leftDotStrokePaint = Paint()..color = const Color(0xFF0D9488)..strokeWidth = 2.5..style = PaintingStyle.stroke;
     final rightDotStrokePaint = Paint()..color = const Color(0xFFF59E0B)..strokeWidth = 2.5..style = PaintingStyle.stroke;
 
-    // 畫水平網格線
     for (int i = 0; i <= 4; i++) {
       double y = chartHeight - (i * 45 / 180.0) * chartHeight;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
@@ -537,7 +646,6 @@ class _TrendPainter extends CustomPainter {
     bool isLeftFirst = true;
     bool isRightFirst = true;
 
-    // 第一階段：畫折線
     for (int i = 0; i < data.length; i++) {
       double x = startX + (i * stepX);
       if (data[i].leftAvg != null) {
@@ -552,7 +660,6 @@ class _TrendPainter extends CustomPainter {
     canvas.drawPath(leftPath, leftLinePaint);
     canvas.drawPath(rightPath, rightLinePaint);
 
-    // 第二階段：畫一般空心點與日期標籤
     for (int i = 0; i < data.length; i++) {
       double x = startX + (i * stepX);
 
@@ -572,15 +679,12 @@ class _TrendPainter extends CustomPainter {
       }
     }
 
-    // 第三階段：畫出互動式 Tooltip (垂直參考線與黑色小視窗)
     if (touchedIndex != null && touchedIndex! < data.length) {
       int i = touchedIndex!;
       double x = startX + (i * stepX);
 
-      // 畫垂直對齊線
       canvas.drawLine(Offset(x, 0), Offset(x, chartHeight), Paint()..color=Colors.grey.shade400..strokeWidth=1..style=PaintingStyle.stroke);
 
-      // 讓被選中的點變大，增加互動感
       if (data[i].leftAvg != null) {
         double y = chartHeight - (data[i].leftAvg! / 180.0) * chartHeight;
         canvas.drawCircle(Offset(x, y), 6.5, dotBgPaint);
@@ -592,7 +696,6 @@ class _TrendPainter extends CustomPainter {
         canvas.drawCircle(Offset(x, y), 6.5, Paint()..color=const Color(0xFFF59E0B)..strokeWidth=3.5..style=PaintingStyle.stroke);
       }
 
-      // 準備 Tooltip 小視窗內容
       String dateStr = data[i].label;
       String lStr = data[i].leftAvg != null ? '${data[i].leftAvg!.round()}°' : '--';
       String rStr = data[i].rightAvg != null ? '${data[i].rightAvg!.round()}°' : '--';
@@ -601,23 +704,19 @@ class _TrendPainter extends CustomPainter {
       TextPainter tpLeft = TextPainter(text: TextSpan(text: '左側平均: $lStr', style: const TextStyle(color: Color(0xFF4ADE80), fontSize: 11, fontWeight: FontWeight.bold)), textDirection: TextDirection.ltr)..layout();
       TextPainter tpRight = TextPainter(text: TextSpan(text: '右側平均: $rStr', style: const TextStyle(color: Color(0xFFFBBF24), fontSize: 11, fontWeight: FontWeight.bold)), textDirection: TextDirection.ltr)..layout();
 
-      // 計算 Tooltip 視窗尺寸與位置
       double boxWidth = math.max(tpDate.width, math.max(tpLeft.width, tpRight.width)) + 20;
       double boxHeight = tpDate.height + tpLeft.height + tpRight.height + 20;
 
-      double tipX = x + 12; // 預設畫在參考線右邊
-      double tipY = chartHeight / 4; // 畫在上方偏中
+      double tipX = x + 12;
+      double tipY = chartHeight / 4;
 
-      // 防呆：如果 Tooltip 畫在右邊會超出螢幕，就把它翻轉到參考線左邊
       if (tipX + boxWidth > size.width) {
         tipX = x - boxWidth - 12;
       }
 
-      // 畫出黑色半透明圓角底框
       final bgRect = RRect.fromRectAndRadius(Rect.fromLTWH(tipX, tipY, boxWidth, boxHeight), const Radius.circular(8));
       canvas.drawRRect(bgRect, Paint()..color = const Color(0xFF1E293B).withValues(alpha: 0.9));
 
-      // 寫入文字
       tpDate.paint(canvas, Offset(tipX + 10, tipY + 8));
       tpLeft.paint(canvas, Offset(tipX + 10, tipY + 8 + tpDate.height + 2));
       tpRight.paint(canvas, Offset(tipX + 10, tipY + 8 + tpDate.height + tpLeft.height + 4));
