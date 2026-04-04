@@ -112,9 +112,15 @@ class _LoginPageState extends State<LoginPage> {
         _showTopSnackBar('❌ 帳號或密碼錯誤！', color: Colors.redAccent);
       }
     } else {
-      // ===== 註冊邏輯的第一步 =====
+      // ===== 註冊邏輯 =====
       if (!_isEmailValid(account)) {
         _showTopSnackBar('⚠️ 請輸入有效的 Email 信箱格式', color: Colors.orange);
+        return;
+      }
+
+      // 💡 補齊防呆邏輯：檢查信箱是否已經存在於假資料庫中
+      if (mockDatabase.containsKey(account)) {
+        _showTopSnackBar('❌ 此電子信箱已經被註冊過了！', color: Colors.redAccent);
         return;
       }
 

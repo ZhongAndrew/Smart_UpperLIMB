@@ -17,11 +17,14 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _conditionController = TextEditingController(); // 💡 新增：病史填寫控制器
 
-  String? _selectedGender;
   DateTime? _selectedDateOfBirth;
+  String? _selectedGender;
+  String? _selectedAffectedSide;
 
   final List<String> _genders = ['男性', '女性', '其他'];
+  final List<String> _affectedSides = ['左側', '右側', '雙側', '無 (健康)'];
 
   @override
   void dispose() {
@@ -29,6 +32,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     _firstNameController.dispose();
     _heightController.dispose();
     _weightController.dispose();
+    _conditionController.dispose();
     super.dispose();
   }
 
@@ -42,11 +46,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF0D9488),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF1E293B),
-            ),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF0D9488), onPrimary: Colors.white, onSurface: Color(0xFF1E293B)),
           ),
           child: child!,
         );
@@ -58,18 +58,34 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   }
 
   void _completeSetup() {
-    // 檢查必填項目
+    // 💡 嚴格防呆：所有欄位皆為必填！
     if (_lastNameController.text.isEmpty ||
         _firstNameController.text.isEmpty ||
+        _heightController.text.isEmpty ||
+        _weightController.text.isEmpty ||
         _selectedGender == null ||
-        _selectedDateOfBirth == null) {
+        _selectedDateOfBirth == null ||
+        _selectedAffectedSide == null ||
+        _conditionController.text.isEmpty) { // 💡 檢查病史文字框是否為空
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ 請填寫姓名、性別與生日')),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white),
+              SizedBox(width: 8),
+              Text('⚠️ 請確實填寫所有標示 * 的必填欄位！', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
       return;
     }
 
-    // 進入主系統 (以 名 + 姓 作為顯示名稱)
+    // 進入主系統 (以 姓+名 作為顯示名稱)
     String fullName = '${_lastNameController.text}${_firstNameController.text}';
 
     Navigator.of(context).pushReplacement(
@@ -99,32 +115,36 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 children: [
                   const Text('最後一步！', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
                   const SizedBox(height: 8),
-                  const Text('請填寫基本資訊，幫助系統進行精確分析。', style: TextStyle(color: Colors.grey)),
+                  const Text('為了提供更精確的分析，請完整填寫以下所有資訊。', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 32),
 
-                  // 姓與名 並排
+                  // 姓名
+                  _buildLabel('姓名 *'),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildTextField('姓', _lastNameController, Icons.person_outline)),
+                      Expanded(child: _buildTextField('姓氏', _lastNameController, Icons.person_outline)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildTextField('名', _firstNameController, null)),
+                      Expanded(flex: 2, child: _buildTextField('名字', _firstNameController, null)),
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  // 性別選擇
+                  // 性別
                   _buildLabel('性別 *'),
                   const SizedBox(height: 12),
-                  _buildGenderSelector(),
+                  _buildChipSelector(_genders, _selectedGender, (val) => setState(() => _selectedGender = val)),
                   const SizedBox(height: 24),
 
-                  // 生日選擇
+                  // 生日
                   _buildLabel('出生年月日 *'),
                   const SizedBox(height: 12),
                   _buildDatePickerTrigger(),
                   const SizedBox(height: 24),
 
-                  // 身高體重 並排
+                  // 身高體重
+                  _buildLabel('生理數據 *'),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(child: _buildNumberField('身高', _heightController, 'cm')),
@@ -132,6 +152,28 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                       Expanded(child: _buildNumberField('體重', _weightController, 'kg')),
                     ],
                   ),
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Divider(color: Colors.black12)),
+
+                  // 💡 醫療專屬欄位區塊
+                  _buildLabel('主要檢測側 / 患側 *'),
+                  const SizedBox(height: 12),
+                  _buildChipSelector(_affectedSides, _selectedAffectedSide, (val) => setState(() => _selectedAffectedSide = val)),
+                  const SizedBox(height: 24),
+
+                  _buildLabel('相關病史或主要症狀 *'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _conditionController,
+                    maxLines: 3, // 💡 允許多行輸入，讓介面更像一個大文字框
+                    decoration: InputDecoration(
+                      hintText: '請簡述您的相關病史或主要症狀...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -149,7 +191,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     backgroundColor: const Color(0xFF0D9488),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('完成並進入系統', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: const Text('完成設定，開始使用', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5)),
                 ),
               ),
             ),
@@ -159,7 +201,16 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     );
   }
 
-  Widget _buildLabel(String text) => Text(text, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)));
+  Widget _buildLabel(String text) {
+    return RichText(
+        text: TextSpan(
+            children: [
+              TextSpan(text: text.replaceAll('*', ''), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B), fontSize: 15)),
+              const TextSpan(text: '*', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent, fontSize: 16)),
+            ]
+        )
+    );
+  }
 
   Widget _buildTextField(String label, TextEditingController controller, IconData? icon) {
     return TextField(
@@ -168,8 +219,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         labelText: label,
         prefixIcon: icon != null ? Icon(icon) : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.white,
+        filled: true, fillColor: Colors.white,
       ),
     );
   }
@@ -183,19 +233,19 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         labelText: label,
         suffixText: suffix,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.white,
+        filled: true, fillColor: Colors.white,
       ),
     );
   }
 
-  Widget _buildGenderSelector() {
+  // 橫向等寬選擇器
+  Widget _buildChipSelector(List<String> options, String? selectedValue, Function(String) onSelect) {
     return Row(
-      children: _genders.map((gender) {
-        bool isSelected = _selectedGender == gender;
+      children: options.map((option) {
+        bool isSelected = selectedValue == option;
         return Expanded(
           child: GestureDetector(
-            onTap: () => setState(() => _selectedGender = gender),
+            onTap: () => onSelect(option),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -204,7 +254,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: isSelected ? const Color(0xFF0D9488) : Colors.grey.shade300),
               ),
-              child: Text(gender, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+              child: Text(option, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             ),
           ),
         );
@@ -215,21 +265,17 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   Widget _buildDatePickerTrigger() {
     String dateStr = _selectedDateOfBirth == null
         ? '請點擊選擇日期'
-        : '${_selectedDateOfBirth!.year} / ${_selectedDateOfBirth!.month} / ${_selectedDateOfBirth!.day}';
+        : '${_selectedDateOfBirth!.year} 年 ${_selectedDateOfBirth!.month} 月 ${_selectedDateOfBirth!.day} 日';
     return GestureDetector(
       onTap: () => _selectDate(context),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: _selectedDateOfBirth == null ? Colors.grey.shade300 : const Color(0xFF0D9488))),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(dateStr, style: TextStyle(color: _selectedDateOfBirth == null ? Colors.grey : Colors.black, fontSize: 16)),
-            const Icon(Icons.calendar_month, color: Color(0xFF0D9488)),
+            Text(dateStr, style: TextStyle(color: _selectedDateOfBirth == null ? Colors.grey : Colors.black, fontSize: 16, fontWeight: _selectedDateOfBirth == null ? FontWeight.normal : FontWeight.bold)),
+            Icon(Icons.calendar_month, color: _selectedDateOfBirth == null ? Colors.grey : const Color(0xFF0D9488)),
           ],
         ),
       ),

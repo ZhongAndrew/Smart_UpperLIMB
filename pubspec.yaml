@@ -28,8 +28,8 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  path_provider: ^2.1.2
-  share_plus: ^7.2.1  # 💡 推薦加入這個，可以直接跳出分享選單把 CSV 傳到電腦
+  path_provider: ^2.1.5
+  share_plus: ^12.0.2  # 💡 推薦加入這個，可以直接跳出分享選單把 CSV 傳到電腦
   flutter:
     sdk: flutter
   flutter_localizations: # 加入這行
@@ -39,6 +39,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   ffi: ^2.2.0
+  file_picker: ^10.3.10
 
 dev_dependencies:
   flutter_test:
