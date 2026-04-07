@@ -9,7 +9,6 @@ void reset_l1() {
 
 __attribute__((visibility("default"))) __attribute__((used))
 double run_l1(double* input) {
-    // 直接將連續的 280 個數字指標餵給模型，不再透過 array 轉換！
     return layer1::genc(input);
 }
 }

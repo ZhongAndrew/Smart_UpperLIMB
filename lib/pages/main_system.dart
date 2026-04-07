@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../models/app_models.dart';
 import 'login_page.dart';
 import 'dashboard_page.dart';
 import 'record_page.dart';
 import 'analysis_page.dart';
 import 'history_page.dart';
+import 'user_profile_page.dart';
 
 class MainSystem extends StatefulWidget {
-  const MainSystem({super.key});
+  final bool isGuest;
+  final String userName;
+
+  const MainSystem({
+    super.key,
+    required this.isGuest,
+    required this.userName
+  });
 
   @override
   State<MainSystem> createState() => _MainSystemState();
@@ -16,138 +25,163 @@ class MainSystem extends StatefulWidget {
 class _MainSystemState extends State<MainSystem> {
   int _currentIndex = 0;
 
-  bool _hasReportData = false;
-  AssessmentReport? _reportData;
+  // 💡 新增：全域同步狀態，預設為 false (未同步)
+  bool _isSynced = false;
 
-  // 存放歷史紀錄的陣列
-  final List<AssessmentReport> _historyRecords = [];
-
-  // 初始化藍牙感測器清單
-  final List<Sensor> sensors = [
-    Sensor(id: 'dot1', name: 'Sensor_Chest', mac: 'D4:22:CD:00:70:EC'),
-    Sensor(id: 'dot2', name: 'Sensor_L_Arm', mac: 'D4:22:CD:00:8C:10'),
-    Sensor(id: 'dot3', name: 'Sensor_R_Arm', mac: '39:03:07:52:34:BF'),
-    Sensor(id: 'dot4', name: 'Sensor_L_Wrist', mac: 'A1:B2:C3:D4:E5:F6'),
-    Sensor(id: 'dot5', name: 'Sensor_R_Wrist', mac: 'F6:E5:D4:C3:B2:A1'),
+  final List<Sensor> _sensors = [
+    Sensor(id: 'S1', name: 'Sensor_Chest', mac: '84:2E:DB:15:3C:A1'),
+    Sensor(id: 'S2', name: 'Sensor_L_Arm', mac: 'D2:22:06:56:4E:A0'),
+    Sensor(id: 'S3', name: 'Sensor_R_Arm', mac: 'C3:31:07:57:5F:B1'),
+    Sensor(id: 'S4', name: 'Sensor_L_Wrist', mac: 'E4:42:08:68:6G:C2'),
+    Sensor(id: 'S5', name: 'Sensor_R_Wrist', mac: 'F5:53:09:69:7H:D3'),
   ];
 
-  final List<String> _titles = ['設備連線', '動作錄製', '綜合報告', '歷史紀錄'];
+  AssessmentReport? _currentReport;
+  final List<AssessmentReport> _historyRecords = [];
 
-  void switchTab(int index) {
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isGuest && widget.userName == '王醫師') {
+      _loadMockHistoryData();
+    }
+  }
+
+  // 💡 接收設備頁面傳來的同步狀態變更
+  void _handleSyncStatusChanged(bool status) {
     setState(() {
-      _currentIndex = index;
+      _isSynced = status;
     });
   }
 
-  void _completeAnalysis(AssessmentReport data) {
-    setState(() {
-      _reportData = data;
-      _hasReportData = true;
-      _currentIndex = 2; // 切換到分析報告頁面
-    });
+  void _loadMockHistoryData() {
+    _historyRecords.addAll([
+      _createMockReport('2026/01/25', '09:15', '05:20', 90, 140),
+      _createMockReport('2026/02/10', '14:30', '04:50', 105, 142),
+      _createMockReport('2026/02/20', '10:00', '05:10', 125, 145),
+      _createMockReport('2026/03/05', '16:45', '06:05', 145, 150),
+      _createMockReport('2026/03/18', '14:30', '05:12', 160, 165),
+    ]);
+    _historyRecords.sort((a, b) => b.fullDate.compareTo(a.fullDate));
   }
 
-  void _saveReportToHistory(AssessmentReport report) {
-    setState(() {
-      _historyRecords.add(report);
-      _reportData = null;
-      _hasReportData = false;
-    });
+  AssessmentReport _createMockReport(String date, String time, String duration, double leftBase, double rightBase) {
+    final List<String> exercises = ['前平舉', '側平舉', '後平舉', '水平外展', '水平內收', '前向肩輪', '側向肩輪'];
+    final math.Random random = math.Random();
+    return AssessmentReport(
+      fullDate: date,
+      time: time,
+      totalTime: duration,
+      results: exercises.map((name) {
+        bool isComplex = name.contains('肩輪');
+        int lAngle = leftBase.toInt() + (random.nextInt(10) - 5);
+        int rAngle = rightBase.toInt() + (random.nextInt(10) - 5);
+        return ExerciseResult(
+          name: name,
+          type: isComplex ? 'complex' : 'standard',
+          left: [RepData(rep: 1, start: 0, end: lAngle, rom: lAngle, dir: isComplex ? '順時針' : null)],
+          right: [RepData(rep: 1, start: 0, end: rAngle, rom: rAngle, dir: isComplex ? '順時針' : null)],
+        );
+      }).toList(),
+    );
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('確認登出？'),
+        content: const Text('登出後將返回登入畫面。'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+            },
+            child: const Text('確定', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void switchTab(int index) => setState(() => _currentIndex = index);
+
+  void _handleAnalysisCompleted(AssessmentReport report) {
+    setState(() { _currentReport = report; _currentIndex = 2; });
+  }
+
+  void _saveReport(AssessmentReport report) {
+    setState(() { _historyRecords.insert(0, report); _currentIndex = 3; });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: const Text('✅ 報告已儲存至歷史紀錄'), backgroundColor: const Color(0xFF0D9488), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pagesList = [
+      DashboardPage(
+        sensors: _sensors,
+        isSynced: _isSynced, // 💡 傳給設備頁面
+        onSyncStatusChanged: _handleSyncStatusChanged, // 💡 接收同步狀態
+        onStateChanged: () => setState(() {}),
+        onAnalysisCompleted: _handleAnalysisCompleted,
+      ),
+      RecordPage(
+        sensors: _sensors,
+        isSynced: _isSynced, // 💡 傳給錄製頁面做判斷
+        onSwitchTab: switchTab,
+        onAnalysisCompleted: _handleAnalysisCompleted,
+      ),
+      AnalysisPage(hasData: _currentReport != null, reportData: _currentReport, userName: widget.userName, onSwitchTab: switchTab, onReportSaved: _saveReport),
+      HistoryPage(isGuest: widget.isGuest, historyRecords: _historyRecords, userName: widget.userName),
+      UserProfilePage(userName: widget.userName),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D9488),
-        title: Row(
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.monitor_heart, color: Color(0xFFF59E0B), size: 24),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('智慧上肢檢測', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(_titles[_currentIndex], style: const TextStyle(fontSize: 10, color: Color(0xFFCCFBF1))),
-              ],
-            ),
+            Text('智慧上肢檢測 - ${widget.userName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(_getPageSubtitle(), style: const TextStyle(fontSize: 12, color: Colors.white70)),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () => _showLogoutDialog(context),
-          ),
+          IconButton(icon: const Icon(Icons.logout_rounded, color: Colors.white), onPressed: _logout),
         ],
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          DashboardPage(
-            sensors: sensors,
-            onStateChanged: () => setState(() {}),
-            onAnalysisCompleted: _completeAnalysis,
-          ),
-          RecordPage(
-            sensors: sensors,
-            onSwitchTab: switchTab,
-            onAnalysisCompleted: _completeAnalysis,
-          ),
-          AnalysisPage(
-            hasData: _hasReportData,
-            reportData: _reportData,
-            onSwitchTab: switchTab,
-            onReportSaved: _saveReportToHistory,
-          ),
-          HistoryPage(historyRecords: _historyRecords),
+      body: pagesList[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF0D9488),
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: '設備'),
+          BottomNavigationBarItem(icon: Icon(Icons.videocam_rounded), label: '錄製'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: '分析'),
+          BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: '紀錄'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: '個人'),
         ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: switchTab,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF0D9488),
-          unselectedItemColor: Colors.grey.shade400,
-          selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-          unselectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: '設備'),
-            BottomNavigationBarItem(icon: Icon(Icons.fiber_manual_record), label: '錄製'),
-            BottomNavigationBarItem(icon: Icon(Icons.insert_chart), label: '報告'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: '紀錄'),
-          ],
-        ),
       ),
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('確認登出？'),
-        content: const Text('登出後將返回登入畫面，且中斷所有感測器連線。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // 關閉 Dialog
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginPage())
-              );
-            },
-            child: const Text('登出', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+  String _getPageSubtitle() {
+    switch (_currentIndex) {
+      case 0: return '設備連線與同步';
+      case 1: return '動作錄製儀表板';
+      case 2: return '本次測量分析報告';
+      case 3: return '歷史紀錄與趨勢';
+      case 4: return '個人基本資料管理';
+      default: return '';
+    }
   }
 }

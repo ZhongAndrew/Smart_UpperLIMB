@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // 💡 確保這行不再報錯
 import 'pages/login_page.dart';
 import 'services/native_service.dart';
 
@@ -6,8 +7,9 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    NativeService().init(); // 如果還是黑屏，就把這行加上雙斜線註解
+    NativeService().init();
   } catch (e) {
+    // ignore: avoid_print
     print("Native 庫載入失敗，但不影響 UI: $e");
   }
 
@@ -28,7 +30,19 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         useMaterial3: true,
       ),
-      home: const LoginPage(), // 💡 確保這裡有指向 LoginPage
+      home: const LoginPage(),
+
+      // 💡 語系委派設定：這會讓日期選擇器變成繁體中文
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh', 'TW'), // 繁體中文
+        Locale('en', 'US'), // 英文備用
+      ],
+      locale: const Locale('zh', 'TW'), // 強制指定初始語係為繁體中文
     );
   }
 }
