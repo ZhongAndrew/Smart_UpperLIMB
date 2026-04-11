@@ -5,7 +5,7 @@
 // File: predictOneWithCache.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 17-Mar-2026 16:50:32
+// C/C++ source code generated on  : 11-Apr-2026 09:57:11
 //
 
 #ifndef PREDICTONEWITHCACHE_H
@@ -115,8 +115,6 @@ class tb_CompactClassificationTree;
 class ub_CompactClassificationTree;
 
 class vb_CompactClassificationTree;
-
-class wb_CompactClassificationTree;
 
 } // namespace classif
 } // namespace learning
@@ -400,12 +398,6 @@ void w_predictOneWithCache(const double X[280], double cachedScore[2],
                            const ::layer1::coder::classreg::learning::classif::
                                w_CompactClassificationTree &weak_learner,
                            bool &cached, double score[2]);
-
-void wb_predictOneWithCache(const double X[280], double cachedScore[2],
-                            double &cachedWeights, const char combiner[15],
-                            const ::layer1::coder::classreg::learning::classif::
-                                wb_CompactClassificationTree &weak_learner,
-                            bool &cached, double score[2]);
 
 void x_predictOneWithCache(const double X[280], double cachedScore[2],
                            double &cachedWeights, const char combiner[15],

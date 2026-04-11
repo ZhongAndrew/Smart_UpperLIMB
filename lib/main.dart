@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; // 💡 確保這行不再報錯
 import 'pages/login_page.dart';
 import 'services/native_service.dart';
+import 'package:smart_rehab_pro/tests/mock_bluetooth_tester.dart';
 
-void main() {
+void main() async{
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
@@ -12,7 +13,11 @@ void main() {
     // ignore: avoid_print
     print("Native 庫載入失敗，但不影響 UI: $e");
   }
+  // ⚠️ 請確保你在 pubspec.yaml 裡面有宣告這個檔案路徑
+  String testFilePath = 'assets/s1_rawData.csv';
 
+  // 執行我們上一回合寫的虛擬藍牙發射器
+  await MockBluetoothTester.runTest(testFilePath);
   runApp(const MyApp());
 }
 
