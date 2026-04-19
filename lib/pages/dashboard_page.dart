@@ -115,23 +115,23 @@ class _DashboardPageState extends State<DashboardPage> {
   void _executeHardwareSync() async {
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
 
-    // 💡 強制要求：必須 5 顆全部連上才能同步
-    if (connectedCount != 5) {
-      _showTopSnackBar('⚠️ 必須 5 顆感測器皆連線後，才能進行硬體同步', color: Colors.orange);
+    if (connectedCount < 1) {
+      _showTopSnackBar('⚠️ 請至少連線 1 顆感測器', color: Colors.orange);
       return;
     }
 
-    // 解除同步
     if (widget.isSynced) {
       widget.onSyncStatusChanged(false);
       widget.onStateChanged();
-      _showTopSnackBar('已解除同步，若要錄製請重新執行硬體同步', color: Colors.grey.shade700);
+      _showTopSnackBar('已解除，若要錄製請重新執行', color: Colors.grey.shade700);
       return;
     }
 
-    // 啟動同步進度條並送出指令
+    // 啟動進度條並呼叫直通模式
     _showSyncProgressDialog();
-    await _nativeService.startHardwareSync();
+
+    // 💡 關鍵：現在我們不呼叫 HardwareSync，而是強制直通！
+    await _nativeService.startFreeMeasure();
   }
 
   // ----------------------------------------------------------------------
