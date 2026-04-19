@@ -1,172 +1,152 @@
+import 'dart:async';
 import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'package:ffi/ffi.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert';
-import 'dart:typed_data';
-typedef MLFuncNative = ffi.Double Function(ffi.Pointer<ffi.Double>);
-typedef MLFuncDart = double Function(ffi.Pointer<ffi.Double>);
+import 'package:flutter/services.dart';
 
-// 定義無參數、無回傳值的 FFI 類型，用來綁定 C++ 的 reset 函數
-typedef VoidFuncNative = ffi.Void Function();
-typedef VoidFuncDart = void Function();
+// --- C++ 函數簽名定義 (FFI) ---
+typedef ResetNative = ffi.Void Function();
+typedef ResetDart = void Function();
+
+typedef RunL1Native = ffi.Double Function(ffi.Pointer<ffi.Double>);
+typedef RunL1Dart = double Function(ffi.Pointer<ffi.Double>);
+
+typedef RunL2Native = ffi.Double Function(ffi.Pointer<ffi.Double>);
+typedef RunL2Dart = double Function(ffi.Pointer<ffi.Double>);
 
 class NativeService {
+  // 💡 Singleton 單例模式：確保全 App 只有一個 Service 實體，狀態不會隨頁面切換消失
   static final NativeService _instance = NativeService._internal();
-
   factory NativeService() => _instance;
-
   NativeService._internal();
 
-  late MLFuncDart _predictL1;
-  late MLFuncDart _predictL2;
+  // 💡 通訊通道
+  static const MethodChannel _controlChannel = MethodChannel('com.example/movella_control');
+  static const EventChannel _streamChannel = EventChannel('com.example/movella_stream');
 
-  // 宣告兩層的重置函數
-  late VoidFuncDart _resetL1;
-  late VoidFuncDart _resetL2;
+  // 💡 [持久化狀態] 即使切換頁面，這份掃描到的 MAC 名單也會留著，解決「連線 5 發現 0」的 Bug
+  final Set<String> discoveredMacs = {};
 
+  // C++ 模型相關變數
   bool _isInitialized = false;
+  late ResetDart _resetL1;
+  late ResetDart _resetL2;
+  late RunL1Dart _predictL1;
+  late RunL2Dart _predictL2;
 
-  void init() {
+  /// --- 1. 藍牙資料流監聽 ---
+
+  /// 取得來自 Kotlin 的廣播資料 (包含感測器數據、掃描事件、同步狀態)
+  Stream<dynamic> get sensorDataStream {
+    return _streamChannel.receiveBroadcastStream();
+  }
+
+  /// --- 2. 掃描與連線控制 (呼叫 Kotlin 後端) ---
+
+  /// 💡 手動將掃描到的 MAC 加入持久化名單
+  void addDiscoveredMac(String mac) {
+    discoveredMacs.add(mac);
+  }
+
+  /// 呼叫底層開始藍牙掃描
+  Future<void> startScan() async {
+    // 每次開始掃描可以選擇是否清空舊名單 (目前保留以解決切頁消失問題)
+    await _controlChannel.invokeMethod('startScan');
+  }
+
+  /// 呼叫底層停止藍牙掃描
+  Future<void> stopScan() async {
+    await _controlChannel.invokeMethod('stopScan');
+  }
+
+  /// 呼叫底層進行藍牙連線
+  Future<void> connectToSensor(String macAddress) async {
     try {
-      final dylib1 = ffi.DynamicLibrary.open("libnative_l1.so");
-      final dylib2 = ffi.DynamicLibrary.open("libnative_l2.so");
-
-      // 綁定預測函數
-      _predictL1 = dylib1.lookupFunction<MLFuncNative, MLFuncDart>("run_l1");
-      _predictL2 = dylib2.lookupFunction<MLFuncNative, MLFuncDart>("run_l2");
-
-      // 🌟 綁定重置函數 (Reset functions)
-      _resetL1 =
-          dylib1.lookupFunction<VoidFuncNative, VoidFuncDart>("reset_l1");
-      _resetL2 =
-          dylib2.lookupFunction<VoidFuncNative, VoidFuncDart>("reset_l2");
-
-      _isInitialized = true;
-      print("✅ Native DLLs initialized successfully with reset functions.");
-    } catch (e) {
-      print("❌ Native DLL init failed: $e");
+      await _controlChannel.invokeMethod('connectSensor', {'address': macAddress});
+    } on PlatformException catch (e) {
+      throw Exception("連線失敗: ${e.message}");
     }
   }
 
-  /// 執行推理測試 (對應你原本的 _runS2Inference)
-  Future<void> runS2Inference(String assetPath) async {
+  /// 💡 呼叫底層進行「硬體級」時鐘同步 (由 Kotlin 的 DotSyncManager 執行)
+  Future<void> startHardwareSync() async {
+    try {
+      await _controlChannel.invokeMethod('startSync');
+    } on PlatformException catch (e) {
+      throw Exception("同步啟動失敗: ${e.message}");
+    }
+  }
+
+  /// --- 3. C++ 機器學習模型運算 (Edge AI) ---
+
+  /// 初始化 C++ 模型 (載入 .so 檔案)
+  void init() {
+    if (_isInitialized) return;
+    try {
+      // 載入第一層模型 (判斷是否在動)
+      final dylib1 = Platform.isAndroid ? ffi.DynamicLibrary.open("libnative_l1.so") : ffi.DynamicLibrary.process();
+      _resetL1 = dylib1.lookupFunction<ResetNative, ResetDart>("reset_11");
+      _predictL1 = dylib1.lookupFunction<RunL1Native, RunL1Dart>("run_11");
+
+      // 載入第二層模型 (辨識動作種類)
+      final dylib2 = Platform.isAndroid ? ffi.DynamicLibrary.open("libnative_l2.so") : ffi.DynamicLibrary.process();
+      _resetL2 = dylib2.lookupFunction<ResetNative, ResetDart>("reset_12");
+      _predictL2 = dylib2.lookupFunction<RunL2Native, RunL2Dart>("run_12");
+
+      _isInitialized = true;
+      print("✅ C++ 模型 (L1 & L2) 載入成功！");
+    } catch (e) {
+      print("❌ C++ 模型載入失敗: $e");
+    }
+  }
+
+  /// 🌟 真人動作預測：輸入 280 個特徵值，回傳動作 ID (0-18)
+  int predictRealAction(List<double> features) {
     if (!_isInitialized) init();
 
-    print("🧹 正在清空內部狀態...");
+    if (features.length != 280) {
+      throw Exception("特徵數量錯誤：預期 280，實際收到 ${features.length}");
+    }
+
+    // 運算前重置模型內部的隱藏狀態 (如 RNN 狀態)
     _resetL1();
     _resetL2();
 
-    final ByteData bytes = await rootBundle.load(assetPath);
-    final Float64List floatList = bytes.buffer.asFloat64List();
-
-    // 每一行現在有 283 個數字 (280特徵 + L2標籤 + L1標籤 + 受試者ID)
-    final int numRows = floatList.length ~/ 283;
-    print("🚀 成功讀取驗證資料，共 $numRows 筆");
-
+    // 準備 C++ 記憶體空間 (使用 ffi.Double)
     final ptr = calloc<ffi.Double>(280);
+    for (int i = 0; i < 280; i++) {
+      ptr[i] = features[i];
+    }
 
-    // 準備統計變數
-    int correctL1 = 0,
-        correctL2 = 0;
-
-    // 建立 19x19 的混淆矩陣 (0~18 動作) 用來算 Pre, Sen, F1
-    List<List<int>> cm = List.generate(19, (_) => List.filled(19, 0));
-
-    // 準備記錄每位受試者的 Accuracy (用來做 T 檢定)
-    Map<int, int> subjectCorrect = {};
-    Map<int, int> subjectTotal = {};
-
-    for (int r = 0; r < numRows; r++) {
-      // 1. 讀取前 280 個特徵並餵入指標 (包含 NaN 解藥)
-      for (int i = 0; i < 280; i++) {
-        double val = floatList[r * 283 + i];
-        if (val.isNaN || val.isInfinite) val = 0.0;
-        ptr[i] = val;
-      }
-
-      // 2. 讀取最後 3 個 Ground Truth 答案
-      int trueL2 = floatList[r * 283 + 280].toInt();
-      int trueL1 = floatList[r * 283 + 281].toInt();
-      int subjectId = floatList[r * 283 + 282].toInt();
-
-      // 3. 執行 C++ 模型預測
+    int finalPrediction = -1; // 預設 -1 代表靜止或無動作
+    try {
+      // 1. 跑第一層：判斷是否有「動作發生」
       double predL1Double = _predictL1(ptr);
-      int predL1 = (predL1Double > 0.5) ? 1 : 0;
-      int predL2 = 0;
-      if (predL1 == 1) {
-        predL2 = _predictL2(ptr).toInt();
+      int isMoving = (predL1Double > 0.5) ? 1 : 0;
+
+      // 2. 如果正在運動，則跑第二層：辨識具體是什麼動作
+      if (isMoving == 1) {
+        finalPrediction = _predictL2(ptr).toInt();
       }
 
-      // 4. 統計 L1 與 L2 正確率
-      if (predL1 == trueL1) correctL1++;
-      if (predL2 == trueL2) correctL2++;
+      return finalPrediction;
 
-      // 記錄混淆矩陣 [實際][預測]
-      cm[trueL2][predL2]++;
-
-      // 記錄每位受試者的表現 (做 T-test 必備)
-      subjectTotal[subjectId] = (subjectTotal[subjectId] ?? 0) + 1;
-      if (predL2 == trueL2) {
-        subjectCorrect[subjectId] = (subjectCorrect[subjectId] ?? 0) + 1;
-      }
+    } finally {
+      // ⚠️ 務必釋放記憶體，否則 App 跑久了會閃退 (Memory Leak)
+      calloc.free(ptr);
     }
+  }
 
-    calloc.free(ptr);
-
-    // ==========================================
-    // 📊 計算與印出最終報告
-    // ==========================================
-    print("\n========== 🏆 模型驗證報告 ==========");
-    print("Layer 1 (動靜二元) Accuracy: ${(correctL1 / numRows * 100)
-        .toStringAsFixed(2)}%");
-    print("Layer 2 (詳細動作) Accuracy: ${(correctL2 / numRows * 100)
-        .toStringAsFixed(2)}%");
-
-    // 計算 Macro-Average Precision, Sensitivity (Recall), F1-Score
-    double macroPre = 0.0,
-        macroSen = 0.0,
-        macroF1 = 0.0;
-    int validClasses = 0;
-
-    for (int i = 0; i < 19; i++) {
-      int tp = cm[i][i];
-      int fn = 0,
-          fp = 0;
-      for (int j = 0; j < 19; j++) {
-        if (i != j) {
-          fn += cm[i][j]; // 實際是 i，被錯判成 j
-          fp += cm[j][i]; // 實際是 j，被錯判成 i
-        }
-      }
-
-      if (tp + fn > 0) { // 如果這個動作在測試集有出現過
-        double pre = (tp + fp == 0) ? 0.0 : tp / (tp + fp);
-        double sen = tp / (tp + fn);
-        double f1 = (pre + sen == 0) ? 0.0 : 2 * (pre * sen) / (pre + sen);
-
-        macroPre += pre;
-        macroSen += sen;
-        macroF1 += f1;
-        validClasses++;
-      }
+  /// 舊有函數佔位 (避免編譯錯誤)
+  Future<void> runS2Inference(String path) async {
+    print("舊版推論介面已由 predictRealAction 取代");
+  }
+  // 💡 新增：明確告訴底層要斷開這顆感測器
+  Future<void> disconnectFromSensor(String macAddress) async {
+    try {
+      await _controlChannel.invokeMethod('disconnectSensor', {'address': macAddress});
+    } catch (e) {
+      print("斷線失敗: $e");
     }
-
-    macroPre /= validClasses;
-    macroSen /= validClasses;
-    macroF1 /= validClasses;
-
-    print("Macro-Precision: ${(macroPre * 100).toStringAsFixed(2)}%");
-    print("Macro-Sensitivity: ${(macroSen * 100).toStringAsFixed(2)}%");
-    print("Macro-F1 Score: ${(macroF1 * 100).toStringAsFixed(2)}%");
-
-    print("\n========== 🔬 各受試者 Accuracy (供 T-test 使用) ==========");
-    List<int> sortedSubjects = subjectTotal.keys.toList()
-      ..sort();
-    for (int s in sortedSubjects) {
-      double acc = subjectCorrect[s]! / subjectTotal[s]!;
-      print("Subject $s: ${(acc * 100).toStringAsFixed(2)}%");
-    }
-    print("==========================================");
   }
 }

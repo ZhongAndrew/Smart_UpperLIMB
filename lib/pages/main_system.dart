@@ -29,11 +29,11 @@ class _MainSystemState extends State<MainSystem> {
   bool _isSynced = false;
 
   final List<Sensor> _sensors = [
-    Sensor(id: 'S1', name: 'Sensor_Chest', mac: '84:2E:DB:15:3C:A1'),
-    Sensor(id: 'S2', name: 'Sensor_L_Arm', mac: 'D2:22:06:56:4E:A0'),
-    Sensor(id: 'S3', name: 'Sensor_R_Arm', mac: 'C3:31:07:57:5F:B1'),
-    Sensor(id: 'S4', name: 'Sensor_L_Wrist', mac: 'E4:42:08:68:6G:C2'),
-    Sensor(id: 'S5', name: 'Sensor_R_Wrist', mac: 'F5:53:09:69:7H:D3'),
+    Sensor(id: 'S1', name: 'Sensor_L_ForeArm', mac: 'D4:22:CD:00:7D:2D'), // 左前臂 (LFA)
+    Sensor(id: 'S2', name: 'Sensor_R_ForeArm', mac: 'D4:22:CD:00:7E:FD'), // 右前臂 (RFA)
+    Sensor(id: 'S3', name: 'Sensor_L_Arm', mac: 'D4:22:CD:00:7E:A6'),     // 左大臂 (LA)
+    Sensor(id: 'S4', name: 'Sensor_R_Arm', mac: 'D4:22:CD:00:7C:AA'),     // 右大臂 (RA)
+    Sensor(id: 'S5', name: 'Sensor_Waist', mac: 'D4:22:CD:00:7A:28'),     // 腰部 (W)
   ];
 
   AssessmentReport? _currentReport;

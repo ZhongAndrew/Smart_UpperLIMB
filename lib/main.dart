@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'; // 💡 確保這行不再報錯
-import 'pages/login_page.dart';
-import 'services/native_service.dart';
+import 'pages/login_page.dart'; // 如果你的路徑不同請自行修改
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  try {
-    NativeService().init();
-  } catch (e) {
-    // ignore: avoid_print
-    print("Native 庫載入失敗，但不影響 UI: $e");
-  }
-
   runApp(const MyApp());
 }
 
@@ -22,27 +12,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '智慧上肢檢測',
+      title: '智慧上肢檢測系統',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: const Color(0xFF0D9488),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0D9488)),
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0D9488)),
       ),
+      // 啟動後直接進入登入頁面
       home: const LoginPage(),
-
-      // 💡 語系委派設定：這會讓日期選擇器變成繁體中文
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('zh', 'TW'), // 繁體中文
-        Locale('en', 'US'), // 英文備用
-      ],
-      locale: const Locale('zh', 'TW'), // 強制指定初始語係為繁體中文
     );
   }
 }
