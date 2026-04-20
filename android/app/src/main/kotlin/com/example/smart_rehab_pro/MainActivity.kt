@@ -61,7 +61,8 @@ class MainActivity: FlutterActivity(),
                     "startScan" -> { mDotScanner?.startScan(); result.success("OK") }
                     "stopScan" -> { mDotScanner?.stopScan(); result.success("OK") }
                     "connectSensor" -> {
-                        val address = call.argument<String>("address")
+                        // 🛡️ 強制轉大寫，保證與 SDK 回傳的格式完全一致
+                        val address = call.argument<String>("address")?.uppercase()
                         if (address != null) {
                             try {
                                 val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as android.bluetooth.BluetoothManager
@@ -76,7 +77,7 @@ class MainActivity: FlutterActivity(),
                         }
                     }
                     "disconnectSensor" -> {
-                        val address = call.argument<String>("address")
+                        val address = call.argument<String>("address")?.uppercase()
                         if (address != null) {
                             connectedDevices[address]?.disconnect()
                             result.success("OK")
@@ -95,14 +96,16 @@ class MainActivity: FlutterActivity(),
                             }
 
                             for (device in connectedDevices.values) {
-                                // 🛑 關鍵 1：必須先強制停止測量，否則改模式會無效
+                                // 🛑 先強制停止
                                 device.stopMeasuring()
+                                Thread.sleep(1500) // 🛡️ 加入 150ms 緩衝，讓藍牙消化停止指令
 
-                                // 🛑 關鍵 2：改用 CUSTOM_MODE_4 (Mode 16)，穩定輸出 Acc/Gyr/Quat
-                                device.measurementMode = DotPayload.PAYLOAD_TYPE_CUSTOM_MODE_4
+                                // ✅ 切換模式
+                                device.measurementMode = DotPayload.PAYLOAD_TYPE_CUSTOM_MODE_5
 
-                                // ▶️ 重新啟動測量
+                                // ✅ 開始測量
                                 device.startMeasuring()
+                                Thread.sleep(300) // 🛡️ 加入 200ms 緩衝，確保這顆感測器啟動完成才叫下一顆
                             }
 
                             runOnUiThread {

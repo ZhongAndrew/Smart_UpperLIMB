@@ -5,7 +5,7 @@
 // File: predictOneWithCache.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 17-Mar-2026 16:54:33
+// C/C++ source code generated on  : 11-Apr-2026 09:59:25
 //
 
 #ifndef PREDICTONEWITHCACHE_H
@@ -157,12 +157,6 @@ class pc_CompactClassificationTree;
 class qc_CompactClassificationTree;
 
 class rc_CompactClassificationTree;
-
-class sc_CompactClassificationTree;
-
-class tc_CompactClassificationTree;
-
-class uc_CompactClassificationTree;
 
 } // namespace classif
 } // namespace learning
@@ -513,12 +507,6 @@ void sb_predictOneWithCache(const double X[280], double cachedScore[18],
                                 sb_CompactClassificationTree &weak_learner,
                             bool &cached, bool initCache, double score[18]);
 
-void sc_predictOneWithCache(const double X[280], double cachedScore[18],
-                            double &cachedWeights, const char combiner[15],
-                            const ::layer2::coder::classreg::learning::classif::
-                                sc_CompactClassificationTree &weak_learner,
-                            bool &cached, bool initCache, double score[18]);
-
 void t_predictOneWithCache(const double X[280], double cachedScore[18],
                            double &cachedWeights, const char combiner[15],
                            const ::layer2::coder::classreg::learning::classif::
@@ -531,12 +519,6 @@ void tb_predictOneWithCache(const double X[280], double cachedScore[18],
                                 tb_CompactClassificationTree &weak_learner,
                             bool &cached, bool initCache, double score[18]);
 
-void tc_predictOneWithCache(const double X[280], double cachedScore[18],
-                            double &cachedWeights, const char combiner[15],
-                            const ::layer2::coder::classreg::learning::classif::
-                                tc_CompactClassificationTree &weak_learner,
-                            bool &cached, bool initCache, double score[18]);
-
 void u_predictOneWithCache(const double X[280], double cachedScore[18],
                            double &cachedWeights, const char combiner[15],
                            const ::layer2::coder::classreg::learning::classif::
@@ -547,12 +529,6 @@ void ub_predictOneWithCache(const double X[280], double cachedScore[18],
                             double &cachedWeights, const char combiner[15],
                             const ::layer2::coder::classreg::learning::classif::
                                 ub_CompactClassificationTree &weak_learner,
-                            bool &cached, bool initCache, double score[18]);
-
-void uc_predictOneWithCache(const double X[280], double cachedScore[18],
-                            double &cachedWeights, const char combiner[15],
-                            const ::layer2::coder::classreg::learning::classif::
-                                uc_CompactClassificationTree &weak_learner,
                             bool &cached, bool initCache, double score[18]);
 
 void v_predictOneWithCache(const double X[280], double cachedScore[18],

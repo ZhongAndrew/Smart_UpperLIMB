@@ -113,5 +113,103 @@ class NativeService {
     }
   }
 
-  Future<void> runS2Inference(String path) async {}
+  Future<void> runS2Inference(String path) async {
+    print("TODO: 這裡原本是同學計算準確率的腳本，因為 Git 合併遺失了上半部，已暫時隱藏。");
+    /*
+    // ⚠️ 以下是合併殘骸，變數 (tp, fn, subjectTotal) 均遺失
+    if (tp + fn > 0) {
+      double pre = (tp + fp == 0) ? 0.0 : tp / (tp + fp);
+      double sen = tp / (tp + fn);
+      double f1 = (pre + sen == 0) ? 0.0 : 2 * (pre * sen) / (pre + sen);
+
+      macroPre += pre;
+      macroSen += sen;
+      macroF1 += f1;
+      validClasses++;
+    }
+
+    macroPre /= validClasses;
+    macroSen /= validClasses;
+    macroF1 /= validClasses;
+
+    print("Macro-Precision: ${(macroPre * 100).toStringAsFixed(2)}%");
+    print("Macro-Sensitivity: ${(macroSen * 100).toStringAsFixed(2)}%");
+    print("Macro-F1 Score: ${(macroF1 * 100).toStringAsFixed(2)}%");
+
+    print("\n========== 🔬 各受試者 Accuracy (供 T-test 使用) ==========");
+    List<int> sortedSubjects = subjectTotal.keys.toList()..sort();
+    for (int s in sortedSubjects) {
+      double acc = subjectCorrect[s]! / subjectTotal[s]!;
+      print("Subject $s: ${(acc * 100).toStringAsFixed(2)}%");
+    }
+    print("==========================================");
+    */
+  }
+
+  /// 即時預測單一 Window 的動作
+  /// 傳入: 280 個經過正規化的特徵 (List<double>)
+  /// 回傳: 預測的動作類別 (0 表示靜止，1~18 表示具體動作)
+  int predictAction(List<double> features) {
+    if (!_isInitialized) init();
+
+    // 確保輸入特徵數量正確防呆
+    if (features.length != 280) {
+      print("⚠️ 警告：送入的特徵數量不是 280！目前數量: ${features.length}");
+      return 0;
+    }
+
+    // 1. 配置一塊 C++ 看得懂的記憶體空間
+    final ptr = calloc<ffi.Double>(280);
+
+    // 2. 將 Dart 的 List<double> 複製進指標中 (包含 NaN 解藥)
+    for (int i = 0; i < 280; i++) {
+      double val = features[i];
+      if (val.isNaN || val.isInfinite) val = 0.0;
+      ptr[i] = val;
+    }
+
+    // 3. 執行預測邏輯 (Layer 1 -> Layer 2)
+    double predL1Double = _predictL1(ptr);
+    int predL1 = (predL1Double > 0.5) ? 1 : 0;
+    int finalPrediction = 0;
+
+    // 如果 Layer 1 判斷為有動作，才啟動 Layer 2 判斷具體動作
+    if (predL1 == 1) {
+      finalPrediction = _predictL2(ptr).toInt();
+    }
+
+    // 4. 釋放記憶體 (非常重要！否則串流會把記憶體吃光)
+    calloc.free(ptr);
+
+    return finalPrediction;
+  }
+
+  /// 獨立的重置函數，供外部在開始新的測試或新病患時呼叫
+  void resetModels() {
+    if (!_isInitialized) init();
+    print("🧹 重置 C++ 模型內部狀態...");
+    _resetL1();
+    _resetL2();
+  }
+
+  /// 取得未經過濾的原始雙層預測結果 [predL1, predL2]
+  List<int> getRawPredictions(List<double> features) {
+    if (!_isInitialized) init();
+
+    final ptr = calloc<ffi.Double>(280);
+    for (int i = 0; i < 280; i++) {
+      double val = features[i];
+      if (val.isNaN || val.isInfinite) val = 0.0;
+      ptr[i] = val;
+    }
+
+    // 取得 L1 原始預測 (0或1)
+    int predL1 = (_predictL1(ptr) > 0.5) ? 1 : 0;
+
+    // 取得 L2 原始預測 (不管 L1 是什麼，我們先算出來放著)
+    int predL2 = _predictL2(ptr).toInt();
+
+    calloc.free(ptr);
+    return [predL1, predL2];
+  }
 }
