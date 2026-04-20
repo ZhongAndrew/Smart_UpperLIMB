@@ -98,7 +98,7 @@ class MainActivity: FlutterActivity(),
                             for (device in connectedDevices.values) {
                                 // 🛑 先強制停止
                                 device.stopMeasuring()
-                                Thread.sleep(1500) // 🛡️ 加入 150ms 緩衝，讓藍牙消化停止指令
+                                Thread.sleep(150) // 🛡️ 加入 150ms 緩衝，讓藍牙消化停止指令
 
                                 // ✅ 切換模式
                                 device.measurementMode = DotPayload.PAYLOAD_TYPE_CUSTOM_MODE_5
@@ -129,8 +129,8 @@ class MainActivity: FlutterActivity(),
         val mac = address?.uppercase() ?: return
         val sensorId = sensorMacMap[mac] ?: "W"
 
-        // Using safe calls to get the primitive arrays.
-        // In COMPLETE_QUATERNION mode, acceleration is represented as Free Acceleration.
+        // 💡 捨棄 getFreeAcc()，直接使用 getAcc() 來獲取包含重力的加速度
+        val acc = d.getAcc()
         val freeAcc = d.getFreeAcc()
         val gyr = d.getGyr()
         val quat = d.getQuat()
@@ -142,38 +142,89 @@ class MainActivity: FlutterActivity(),
 
         // We assume the Xsens SDK returns the correct length array (3 for vectors, 4 for quats).
         // Using try-catch as a final safety net to prevent any background thread crashes.
-        try {
+//        try {
+//            // 💡 把 acc 放進 Map 傳給 Flutter
+//            singleDataMap["accX"] = acc[0]
+//            singleDataMap["accY"] = acc[1]
+//            singleDataMap["accZ"] = acc[2]
+//        } catch (e: Exception) {
+//            singleDataMap["accX"] = 0.0
+//            singleDataMap["accY"] = 0.0
+//            singleDataMap["accZ"] = 0.0
+//        }
+//        try {
+//            // 💡 確保傳給 Flutter 的是純粹的 FreeAcc
+//            singleDataMap["accX"] = freeAcc[0]
+//            singleDataMap["accY"] = freeAcc[1]
+//            singleDataMap["accZ"] = freeAcc[2]
+//        } catch (e: Exception) {
+//            singleDataMap["accX"] = 0.0
+//            singleDataMap["accY"] = 0.0
+//            singleDataMap["accZ"] = 0.0
+//        }
+//        try {
+//            singleDataMap["gyrX"] = gyr[0]
+//            singleDataMap["gyrY"] = gyr[1]
+//            singleDataMap["gyrZ"] = gyr[2]
+//        } catch (e: Exception) {
+//            singleDataMap["gyrX"] = 0.0
+//            singleDataMap["gyrY"] = 0.0
+//            singleDataMap["gyrZ"] = 0.0
+//        }
+//
+//        try {
+//            singleDataMap["quatW"] = quat[0].toDouble()
+//            singleDataMap["quatX"] = quat[1].toDouble()
+//            singleDataMap["quatY"] = quat[2].toDouble()
+//            singleDataMap["quatZ"] = quat[3].toDouble()
+//        } catch (e: Exception) {
+//            singleDataMap["quatW"] = 1.0
+//            singleDataMap["quatX"] = 0.0
+//            singleDataMap["quatY"] = 0.0
+//            singleDataMap["quatZ"] = 0.0
+//        }
+        // 🌟 1. 處理加速度
+        if (acc != null && acc.size >= 3) {
+            singleDataMap["accX"] = acc[0].toDouble()
+            singleDataMap["accY"] = acc[1].toDouble()
+            singleDataMap["accZ"] = acc[2].toDouble()
+        } else if (freeAcc != null && freeAcc.size >= 3) {
             singleDataMap["accX"] = freeAcc[0].toDouble()
             singleDataMap["accY"] = freeAcc[1].toDouble()
             singleDataMap["accZ"] = freeAcc[2].toDouble()
-        } catch (e: Exception) {
+        } else {
+            // 💡 加上這行 Log，如果 Payload 設錯，Logcat 會狂刷這條訊息
+            Log.w("XsensData", "[$mac] 加速度資料為空！已自動補 0。請檢查 Payload 設定或藍牙連線。")
             singleDataMap["accX"] = 0.0
             singleDataMap["accY"] = 0.0
             singleDataMap["accZ"] = 0.0
         }
 
-        try {
-            singleDataMap["gyrX"] = gyr[0]
-            singleDataMap["gyrY"] = gyr[1]
-            singleDataMap["gyrZ"] = gyr[2]
-        } catch (e: Exception) {
+// 🌟 2. 處理陀螺儀
+        if (gyr != null && gyr.size >= 3) {
+            singleDataMap["gyrX"] = gyr[0].toDouble()
+            singleDataMap["gyrY"] = gyr[1].toDouble()
+            singleDataMap["gyrZ"] = gyr[2].toDouble()
+        } else {
+            Log.w("XsensData", "[$mac] 陀螺儀資料為空！已自動補 0。")
             singleDataMap["gyrX"] = 0.0
             singleDataMap["gyrY"] = 0.0
             singleDataMap["gyrZ"] = 0.0
         }
 
-        try {
+// 🌟 3. 處理四元數
+        if (quat != null && quat.size >= 4) {
             singleDataMap["quatW"] = quat[0].toDouble()
             singleDataMap["quatX"] = quat[1].toDouble()
             singleDataMap["quatY"] = quat[2].toDouble()
             singleDataMap["quatZ"] = quat[3].toDouble()
-        } catch (e: Exception) {
+        } else {
+            Log.w("XsensData", "[$mac] 四元數資料為空！已自動還原為單位四元數。")
             singleDataMap["quatW"] = 1.0
             singleDataMap["quatX"] = 0.0
             singleDataMap["quatY"] = 0.0
             singleDataMap["quatZ"] = 0.0
         }
-
         runOnUiThread { eventSink?.success(singleDataMap) }
     }
 

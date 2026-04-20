@@ -56,10 +56,10 @@ class _RecordPageState extends State<RecordPage> {
   final Map<String, List<double>> _gyrY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
 // 💡 [新增] 四元數的畫圖陣列
-//   final Map<String, List<double>> _quatW = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
-//   final Map<String, List<double>> _quatX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
-//   final Map<String, List<double>> _quatY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
-//   final Map<String, List<double>> _quatZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatW = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, ValueNotifier<int>> _chartTriggers = {
     "LFA": ValueNotifier(0), "RFA": ValueNotifier(0), "LA": ValueNotifier(0), "RA": ValueNotifier(0), "W": ValueNotifier(0)
   };
@@ -71,7 +71,6 @@ class _RecordPageState extends State<RecordPage> {
     _sensorSub = _nativeService.sensorDataStream.listen((data) {
       if (data is Map && data['event'] == 'DATA') {
 
-        // 💡 讀取 Kotlin 幫我們對應好的標籤
         String prefix = data['sensorId']?.toString() ?? "W";
 
         if (orderedSensors.contains(prefix)) {
@@ -82,36 +81,41 @@ class _RecordPageState extends State<RecordPage> {
           double gX = _parseDouble(data['gyrX']);
           double gY = _parseDouble(data['gyrY']);
           double gZ = _parseDouble(data['gyrZ']);
-          // 💡 [新增] 將四元數存入畫圖陣列
-          // _quatW[prefix]!.add(_latestSensorData['${prefix}_quatW']!);
-          // _quatX[prefix]!.add(_latestSensorData['${prefix}_quatX']!);
-          // _quatY[prefix]!.add(_latestSensorData['${prefix}_quatY']!);
-          // _quatZ[prefix]!.add(_latestSensorData['${prefix}_quatZ']!);
 
-          // 存入 AI 資料庫
+          // 💡 [修正] 直接從 data 解析四元數，並給予安全的預設值
+          double qW = _parseDouble(data['quatW'] ?? 1.0);
+          double qX = _parseDouble(data['quatX'] ?? 0.0);
+          double qY = _parseDouble(data['quatY'] ?? 0.0);
+          double qZ = _parseDouble(data['quatZ'] ?? 0.0);
+
+          // 存入 AI 資料庫 (覆蓋最新狀態)
           _latestSensorData['${prefix}_accX'] = aX;
           _latestSensorData['${prefix}_accY'] = aY;
           _latestSensorData['${prefix}_accZ'] = aZ;
           _latestSensorData['${prefix}_gyrX'] = gX;
           _latestSensorData['${prefix}_gyrY'] = gY;
           _latestSensorData['${prefix}_gyrZ'] = gZ;
-
-          _latestSensorData['${prefix}_quatW'] = _parseDouble(data['quatW'] ?? 1.0);
-          _latestSensorData['${prefix}_quatX'] = _parseDouble(data['quatX']);
-          _latestSensorData['${prefix}_quatY'] = _parseDouble(data['quatY']);
-          _latestSensorData['${prefix}_quatZ'] = _parseDouble(data['quatZ']);
+          _latestSensorData['${prefix}_quatW'] = qW;
+          _latestSensorData['${prefix}_quatX'] = qX;
+          _latestSensorData['${prefix}_quatY'] = qY;
+          _latestSensorData['${prefix}_quatZ'] = qZ;
 
           // 存入畫圖陣列並更新畫面
           if (mounted) {
             _accX[prefix]!.add(aX); _accY[prefix]!.add(aY); _accZ[prefix]!.add(aZ);
             _gyrX[prefix]!.add(gX); _gyrY[prefix]!.add(gY); _gyrZ[prefix]!.add(gZ);
 
+            // 💡 [修正] 使用剛剛解析出來的 qW, qX, qY, qZ 存入畫圖陣列
+            _quatW[prefix]!.add(qW);
+            _quatX[prefix]!.add(qX);
+            _quatY[prefix]!.add(qY);
+            _quatZ[prefix]!.add(qZ);
+
             if (_accX[prefix]!.length > _maxDataPoints) {
               _accX[prefix]!.removeAt(0); _accY[prefix]!.removeAt(0); _accZ[prefix]!.removeAt(0);
               _gyrX[prefix]!.removeAt(0); _gyrY[prefix]!.removeAt(0); _gyrZ[prefix]!.removeAt(0);
-              // 💡 [新增] 保持四元數陣列長度
-              // _quatW[prefix]!.removeAt(0); _quatX[prefix]!.removeAt(0);
-              // _quatY[prefix]!.removeAt(0); _quatZ[prefix]!.removeAt(0);
+              _quatW[prefix]!.removeAt(0); _quatX[prefix]!.removeAt(0);
+              _quatY[prefix]!.removeAt(0); _quatZ[prefix]!.removeAt(0);
             }
 
             _chartTriggers[prefix]!.value++;
@@ -388,7 +392,7 @@ class _RecordPageState extends State<RecordPage> {
 
   Widget _buildSensorDataCard(Sensor sensor) {
     bool isConnected = sensor.isConnected;
-    String prefix = _getPrefixFromMac(sensor.mac); // 💡 保證每一頁對應對的 Prefix
+    String prefix = _getPrefixFromMac(sensor.mac);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -407,14 +411,21 @@ class _RecordPageState extends State<RecordPage> {
             ],
           ),
           const Divider(height: 16),
+          // 💡 [優化] 改用可滾動視窗，避免三個圖表擠在一起
           Expanded(
-            child: Column(
-              children: [
-                // 💡 調整加速度的預設範圍，如果超過就會自動超出畫面，保持靈敏度
-                _buildChartSection('加速度 (m/s²)', 'acc', prefix, -30, 30),
-                const SizedBox(height: 8),
-                _buildChartSection('陀螺儀 (deg/s)', 'gyr', prefix, -400, 400),
-              ],
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // 💡 [優化] 加大圖表高度，讓波形更容易看清楚
+                  _buildChartSection('加速度 (m/s²)', 'acc', prefix, -30, 30, height: 120),
+                  const SizedBox(height: 16),
+                  _buildChartSection('陀螺儀 (deg/s)', 'gyr', prefix, -400, 400, height: 120),
+                  const SizedBox(height: 16),
+                  _buildChartSection('四元數 (Quaternion)', 'quat', prefix, -1.0, 1.0, height: 140),
+                  const SizedBox(height: 20), // 底部留白
+                ],
+              ),
             ),
           )
         ],
@@ -422,49 +433,63 @@ class _RecordPageState extends State<RecordPage> {
     );
   }
 
-  Widget _buildChartSection(String title, String type, String prefix, double minY, double maxY) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _chartTriggers[prefix] ?? ValueNotifier(0),
-                  builder: (context, _, __) {
-                    return CustomPaint(
-                      painter: _MultiLinePainter(
-                        xData: type == 'acc' ? (_accX[prefix] ?? []) : (_gyrX[prefix] ?? []),
-                        yData: type == 'acc' ? (_accY[prefix] ?? []) : (_gyrY[prefix] ?? []),
-                        zData: type == 'acc' ? (_accZ[prefix] ?? []) : (_gyrZ[prefix] ?? []),
-                        minY: minY,
-                        maxY: maxY,
-                        maxPoints: _maxDataPoints,
-                      ),
-                      child: Container(),
-                    );
-                  },
-                ),
-              ),
+  Widget _buildChartSection(String title, String type, String prefix, double minY, double maxY, {double height = 120}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+        const SizedBox(height: 4),
+        // 💡 [優化] 給予固定的高度，而不是讓 Expanded 去擠壓
+        Container(
+          height: height,
+          width: double.infinity,
+          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: ValueListenableBuilder<int>(
+              valueListenable: _chartTriggers[prefix] ?? ValueNotifier(0),
+              builder: (context, _, __) {
+                // 🛡️ [修復] 防呆機制：確保陣列為空時，仍有全 0 的資料可以畫出基準線
+                List<double> fallbackData = List.filled(_maxDataPoints, 0.0);
+
+                return CustomPaint(
+                  painter: _MultiLinePainter(
+                    xData: type == 'acc' ? (_accX[prefix]?.isNotEmpty == true ? _accX[prefix]! : fallbackData)
+                        : type == 'gyr' ? (_gyrX[prefix]?.isNotEmpty == true ? _gyrX[prefix]! : fallbackData)
+                        : (_quatX[prefix]?.isNotEmpty == true ? _quatX[prefix]! : fallbackData),
+
+                    yData: type == 'acc' ? (_accY[prefix]?.isNotEmpty == true ? _accY[prefix]! : fallbackData)
+                        : type == 'gyr' ? (_gyrY[prefix]?.isNotEmpty == true ? _gyrY[prefix]! : fallbackData)
+                        : (_quatY[prefix]?.isNotEmpty == true ? _quatY[prefix]! : fallbackData),
+
+                    zData: type == 'acc' ? (_accZ[prefix]?.isNotEmpty == true ? _accZ[prefix]! : fallbackData)
+                        : type == 'gyr' ? (_gyrZ[prefix]?.isNotEmpty == true ? _gyrZ[prefix]! : fallbackData)
+                        : (_quatZ[prefix]?.isNotEmpty == true ? _quatZ[prefix]! : fallbackData),
+
+                    wData: type == 'quat' ? (_quatW[prefix]?.isNotEmpty == true ? _quatW[prefix]! : fallbackData) : null,
+                    minY: minY,
+                    maxY: maxY,
+                    maxPoints: _maxDataPoints,
+                  ),
+                  child: Container(),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 4),
-          Center(child: _buildLegend()),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        Center(child: _buildLegend(hasW: type == 'quat')),
+      ],
     );
   }
 
-  Widget _buildLegend() {
+  Widget _buildLegend({bool hasW = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (hasW) ...[
+          _legendDot(Colors.purple, 'W軸'), const SizedBox(width: 12),
+        ],
         _legendDot(Colors.orange, 'X軸'), const SizedBox(width: 12),
         _legendDot(Colors.blue, 'Y軸'), const SizedBox(width: 12),
         _legendDot(Colors.green, 'Z軸'),
@@ -483,10 +508,12 @@ class _RecordPageState extends State<RecordPage> {
   }
 }
 
+// 💡 升級版的畫圖類別，支援 4 條線
 class _MultiLinePainter extends CustomPainter {
   final List<double> xData;
   final List<double> yData;
   final List<double> zData;
+  final List<double>? wData;
   final double minY;
   final double maxY;
   final int maxPoints;
@@ -495,6 +522,7 @@ class _MultiLinePainter extends CustomPainter {
     required this.xData,
     required this.yData,
     required this.zData,
+    this.wData,
     required this.minY,
     required this.maxY,
     required this.maxPoints,
@@ -502,6 +530,9 @@ class _MultiLinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 🛡️ 防呆：如果畫布寬度或高度無效，提早跳出，避免 NaN 錯誤
+    if (size.width <= 0 || size.height <= 0) return;
+
     final gridPaint = Paint()..color = Colors.grey.shade300..strokeWidth = 1;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
@@ -510,21 +541,27 @@ class _MultiLinePainter extends CustomPainter {
       double yPos = size.height - ((val - minY) / (maxY - minY)) * size.height;
       if (yPos >= 0 && yPos <= size.height) {
         canvas.drawLine(Offset(0, yPos), Offset(size.width, yPos), gridPaint);
-
-        textPainter.text = TextSpan(text: val.toInt().toString(), style: TextStyle(color: Colors.grey.shade500, fontSize: 10));
+        // 如果是小數點(如四元數)，保留一位小數；否則轉整數
+        String labelText = maxY <= 1.0 ? val.toStringAsFixed(1) : val.toInt().toString();
+        textPainter.text = TextSpan(text: labelText, style: TextStyle(color: Colors.grey.shade500, fontSize: 10));
         textPainter.layout();
         double textY = yPos == 0 ? 2 : (yPos >= size.height ? size.height - 14 : yPos - 14);
         textPainter.paint(canvas, Offset(4, textY));
       }
     }
 
+    // 畫出原本的 X, Y, Z
     _drawLine(canvas, size, xData, Colors.orange);
     _drawLine(canvas, size, yData, Colors.blue);
     _drawLine(canvas, size, zData, Colors.green);
+
+    // 💡 如果有傳入 wData，就多畫一條紫色的線
+    if (wData != null && wData!.isNotEmpty) {
+      _drawLine(canvas, size, wData!, Colors.purple);
+    }
   }
 
   void _drawLine(Canvas canvas, Size size, List<double> data, Color color) {
-    // 如果 Android 完全沒傳資料過來，就提早跳出
     if (data.isEmpty) return;
 
     final paint = Paint()
@@ -534,24 +571,23 @@ class _MultiLinePainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final path = Path();
-    final double stepX = size.width / (maxPoints - 1);
 
+    // 🛡️ 防呆：避免除以零
+    final int dataCount = data.length > maxPoints ? maxPoints : data.length;
+    if (dataCount <= 1) return;
+
+    final double stepX = size.width / (dataCount - 1);
     bool hasStarted = false;
 
-    for (int i = 0; i < data.length; i++) {
+    for (int i = 0; i < dataCount; i++) {
       final double x = i * stepX;
       double val = data[i];
 
-      // 🛡️ 終極防禦：攔截 NaN 與 Infinity，直接當作 0.0 畫出來
-      if (val.isNaN || val.isInfinite) {
-        val = 0.0;
-      }
+      if (val.isNaN || val.isInfinite) val = 0.0;
 
-      // 計算 Y 座標
       double y = size.height - ((val - minY) / (maxY - minY)) * size.height;
-
-      // 限制 Y 座標不要過度超出畫布邊界
-      y = y.clamp(-10.0, size.height + 10.0);
+      // 限制在畫布範圍外一點點，避免超出太多導致繪製異常
+      y = y.clamp(-20.0, size.height + 20.0);
 
       if (!hasStarted) {
         path.moveTo(x, y);
@@ -561,14 +597,110 @@ class _MultiLinePainter extends CustomPainter {
       }
     }
 
-    // 確保 Path 裡面有合法座標才執行繪製，防止閃退
-    if (hasStarted) {
-      canvas.drawPath(path, paint);
-    }
+    if (hasStarted) canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _MultiLinePainter oldDelegate) {
-    return true;
-  }
+  bool shouldRepaint(covariant _MultiLinePainter oldDelegate) => true;
 }
+
+//   Widget _legendDot(Color color, String label) {
+//     return Row(
+//       children: [
+//         CircleAvatar(radius: 4, backgroundColor: color),
+//         const SizedBox(width: 4),
+//         Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+//       ],
+//     );
+//   }
+// }
+
+// class _MultiLinePainter extends CustomPainter {
+//   final List<double> xData;
+//   final List<double> yData;
+//   final List<double> zData;
+//   final double minY;
+//   final double maxY;
+//   final int maxPoints;
+//
+//   _MultiLinePainter({
+//     required this.xData,
+//     required this.yData,
+//     required this.zData,
+//     required this.minY,
+//     required this.maxY,
+//     required this.maxPoints,
+//   });
+//
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final gridPaint = Paint()..color = Colors.grey.shade300..strokeWidth = 1;
+//     final textPainter = TextPainter(textDirection: TextDirection.ltr);
+//
+//     List<double> gridValues = [maxY, 0, minY];
+//     for (double val in gridValues) {
+//       double yPos = size.height - ((val - minY) / (maxY - minY)) * size.height;
+//       if (yPos >= 0 && yPos <= size.height) {
+//         canvas.drawLine(Offset(0, yPos), Offset(size.width, yPos), gridPaint);
+//
+//         textPainter.text = TextSpan(text: val.toInt().toString(), style: TextStyle(color: Colors.grey.shade500, fontSize: 10));
+//         textPainter.layout();
+//         double textY = yPos == 0 ? 2 : (yPos >= size.height ? size.height - 14 : yPos - 14);
+//         textPainter.paint(canvas, Offset(4, textY));
+//       }
+//     }
+//
+//     _drawLine(canvas, size, xData, Colors.orange);
+//     _drawLine(canvas, size, yData, Colors.blue);
+//     _drawLine(canvas, size, zData, Colors.green);
+//   }
+//
+//   void _drawLine(Canvas canvas, Size size, List<double> data, Color color) {
+//     // 如果 Android 完全沒傳資料過來，就提早跳出
+//     if (data.isEmpty) return;
+//
+//     final paint = Paint()
+//       ..color = color
+//       ..style = PaintingStyle.stroke
+//       ..strokeWidth = 1.5
+//       ..strokeJoin = StrokeJoin.round;
+//
+//     final path = Path();
+//     final double stepX = size.width / (maxPoints - 1);
+//
+//     bool hasStarted = false;
+//
+//     for (int i = 0; i < data.length; i++) {
+//       final double x = i * stepX;
+//       double val = data[i];
+//
+//       // 🛡️ 終極防禦：攔截 NaN 與 Infinity，直接當作 0.0 畫出來
+//       if (val.isNaN || val.isInfinite) {
+//         val = 0.0;
+//       }
+//
+//       // 計算 Y 座標
+//       double y = size.height - ((val - minY) / (maxY - minY)) * size.height;
+//
+//       // 限制 Y 座標不要過度超出畫布邊界
+//       y = y.clamp(-10.0, size.height + 10.0);
+//
+//       if (!hasStarted) {
+//         path.moveTo(x, y);
+//         hasStarted = true;
+//       } else {
+//         path.lineTo(x, y);
+//       }
+//     }
+//
+//     // 確保 Path 裡面有合法座標才執行繪製，防止閃退
+//     if (hasStarted) {
+//       canvas.drawPath(path, paint);
+//     }
+//   }
+//
+//   @override
+//   bool shouldRepaint(covariant _MultiLinePainter oldDelegate) {
+//     return true;
+//   }
+// }
