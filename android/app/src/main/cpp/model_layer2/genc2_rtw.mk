@@ -2,7 +2,7 @@
 ## Makefile generated for component 'genc2'. 
 ## 
 ## Makefile     : genc2_rtw.mk
-## Generated on : Tue Mar 17 17:18:26 2026
+## Generated on : Sat Mar 14 15:37:03 2026
 ## Final product: .\genc2.lib
 ## Product type : static-library
 ## 
@@ -24,12 +24,12 @@ MAKEFILE                  = genc2_rtw.mk
 MATLAB_ROOT               = C:\PROGRA~1\MATLAB\R2025b
 MATLAB_BIN                = C:\PROGRA~1\MATLAB\R2025b\bin
 MATLAB_ARCH_BIN           = $(MATLAB_BIN)\win64
-START_DIR                 = C:\Users\chen\Documents\MATLAB\codegen_output\fold2\model_layer2
+START_DIR                 = C:\Users\chen\Documents\MATLAB
 TGT_FCN_LIB               = ISO_C++11
 SOLVER_OBJ                = 
 CLASSIC_INTERFACE         = 0
 MODEL_HAS_DYNAMICALLY_LOADED_SFCNS = 
-RELATIVE_PATH_TO_ANCHOR   = .
+RELATIVE_PATH_TO_ANCHOR   = ..\..\..
 COMPILER_COMMAND_FILE     = genc2_rtw_comp.rsp
 CMD_FILE                  = genc2_rtw.rsp
 C_STANDARD_OPTS           = 
@@ -184,7 +184,7 @@ DEFINES = $(DEFINES_CUSTOM) $(DEFINES_STANDARD)
 ## SOURCE FILES
 ###########################################################################
 
-SRCS = $(START_DIR)\genc2_data.cpp $(START_DIR)\genc2_initialize.cpp $(START_DIR)\genc2_terminate.cpp $(START_DIR)\genc2.cpp $(START_DIR)\minOrMax.cpp $(START_DIR)\aggregatePredict.cpp $(START_DIR)\predictOneWithCache.cpp $(START_DIR)\updateCache.cpp $(START_DIR)\CompactClassificationEnsemble.cpp $(START_DIR)\CompactClassificationTree.cpp
+SRCS = $(START_DIR)\codegen\lib\genc2\genc2_data.cpp $(START_DIR)\codegen\lib\genc2\genc2_initialize.cpp $(START_DIR)\codegen\lib\genc2\genc2_terminate.cpp $(START_DIR)\codegen\lib\genc2\genc2.cpp $(START_DIR)\codegen\lib\genc2\minOrMax.cpp $(START_DIR)\codegen\lib\genc2\aggregatePredict.cpp $(START_DIR)\codegen\lib\genc2\predictOneWithCache.cpp $(START_DIR)\codegen\lib\genc2\updateCache.cpp $(START_DIR)\codegen\lib\genc2\CompactClassificationEnsemble.cpp $(START_DIR)\codegen\lib\genc2\CompactClassificationTree.cpp
 
 ALL_SRCS = $(SRCS)
 
@@ -326,6 +326,22 @@ $(PRODUCT) : $(OBJS) $(PREBUILT_OBJS)
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
 
 
+{$(START_DIR)\codegen\lib\genc2}.c.obj:
+	$(CC) $(CFLAGS) -Fo"$@" "$<"
+
+
+{$(START_DIR)\codegen\lib\genc2}.cpp.obj:
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
+
+
+{$(START_DIR)\codegen\lib\genc2}.cc.obj:
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
+
+
+{$(START_DIR)\codegen\lib\genc2}.cxx.obj:
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
+
+
 {$(START_DIR)}.c.obj:
 	$(CC) $(CFLAGS) -Fo"$@" "$<"
 
@@ -342,60 +358,44 @@ $(PRODUCT) : $(OBJS) $(PREBUILT_OBJS)
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
 
 
-{C:\Users\chen\Documents\MATLAB}.c.obj:
-	$(CC) $(CFLAGS) -Fo"$@" "$<"
+genc2_data.obj : "$(START_DIR)\codegen\lib\genc2\genc2_data.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\genc2_data.cpp"
 
 
-{C:\Users\chen\Documents\MATLAB}.cpp.obj:
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
+genc2_initialize.obj : "$(START_DIR)\codegen\lib\genc2\genc2_initialize.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\genc2_initialize.cpp"
 
 
-{C:\Users\chen\Documents\MATLAB}.cc.obj:
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
+genc2_terminate.obj : "$(START_DIR)\codegen\lib\genc2\genc2_terminate.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\genc2_terminate.cpp"
 
 
-{C:\Users\chen\Documents\MATLAB}.cxx.obj:
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$<"
+genc2.obj : "$(START_DIR)\codegen\lib\genc2\genc2.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\genc2.cpp"
 
 
-genc2_data.obj : "$(START_DIR)\genc2_data.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\genc2_data.cpp"
+minOrMax.obj : "$(START_DIR)\codegen\lib\genc2\minOrMax.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\minOrMax.cpp"
 
 
-genc2_initialize.obj : "$(START_DIR)\genc2_initialize.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\genc2_initialize.cpp"
+aggregatePredict.obj : "$(START_DIR)\codegen\lib\genc2\aggregatePredict.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\aggregatePredict.cpp"
 
 
-genc2_terminate.obj : "$(START_DIR)\genc2_terminate.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\genc2_terminate.cpp"
+predictOneWithCache.obj : "$(START_DIR)\codegen\lib\genc2\predictOneWithCache.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\predictOneWithCache.cpp"
 
 
-genc2.obj : "$(START_DIR)\genc2.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\genc2.cpp"
+updateCache.obj : "$(START_DIR)\codegen\lib\genc2\updateCache.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\updateCache.cpp"
 
 
-minOrMax.obj : "$(START_DIR)\minOrMax.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\minOrMax.cpp"
+CompactClassificationEnsemble.obj : "$(START_DIR)\codegen\lib\genc2\CompactClassificationEnsemble.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\CompactClassificationEnsemble.cpp"
 
 
-aggregatePredict.obj : "$(START_DIR)\aggregatePredict.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\aggregatePredict.cpp"
-
-
-predictOneWithCache.obj : "$(START_DIR)\predictOneWithCache.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\predictOneWithCache.cpp"
-
-
-updateCache.obj : "$(START_DIR)\updateCache.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\updateCache.cpp"
-
-
-CompactClassificationEnsemble.obj : "$(START_DIR)\CompactClassificationEnsemble.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\CompactClassificationEnsemble.cpp"
-
-
-CompactClassificationTree.obj : "$(START_DIR)\CompactClassificationTree.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\CompactClassificationTree.cpp"
+CompactClassificationTree.obj : "$(START_DIR)\codegen\lib\genc2\CompactClassificationTree.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\codegen\lib\genc2\CompactClassificationTree.cpp"
 
 
 ###########################################################################

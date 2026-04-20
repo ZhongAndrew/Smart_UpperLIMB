@@ -32,7 +32,8 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isScanning = false;
   int _syncProgress = 0;
   bool _isSyncDialogShowing = false;
-
+// 💡 [加入這裡]：記錄各個 MAC 位址是否正在連線/斷線中 (轉圈圈狀態)
+  final Map<String, bool> _isConnecting = {};
   @override
   void initState() {
     super.initState();
@@ -133,7 +134,49 @@ class _DashboardPageState extends State<DashboardPage> {
     // 💡 關鍵：現在我們不呼叫 HardwareSync，而是強制直通！
     await _nativeService.startFreeMeasure();
   }
+  // 💡 [加入這裡]：處理防呆與延遲連線
+  Future<void> _toggleSensorConnection(Sensor sensor, bool connect) async {
+    // 1. 防連點：如果這顆感測器已經在連線/斷線中，直接擋掉
+    if (_isConnecting[sensor.mac] == true) return;
 
+    // 2. 啟動轉圈圈
+    setState(() {
+      _isConnecting[sensor.mac] = true;
+    });
+
+    try {
+      if (connect) {
+        _showTopSnackBar('⏳ 正在連線至 ${sensor.name}...');
+        await _nativeService.connectToSensor(sensor.mac);
+
+        // 🛑 核心防呆：強制鎖死並轉圈圈 1.5 秒，保護藍牙通道
+        await Future.delayed(const Duration(milliseconds: 1500));
+
+        setState(() => sensor.isConnected = true);
+      } else {
+        _showTopSnackBar('⏹️ 正在斷開 ${sensor.name}...', color: Colors.grey);
+        await _nativeService.disconnectFromSensor(sensor.mac);
+
+        // 斷線也給予 0.5 秒的緩衝，避免瞬間又被重新點擊
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        setState(() {
+          sensor.isConnected = false;
+          widget.onSyncStatusChanged(false); // 解除同步狀態
+        });
+      }
+      widget.onStateChanged();
+    } catch (e) {
+      _showTopSnackBar('❌ 操作失敗: $e', color: Colors.red);
+    } finally {
+      // 3. 無論成功或失敗，最後都解除轉圈圈狀態
+      if (mounted) {
+        setState(() {
+          _isConnecting[sensor.mac] = false;
+        });
+      }
+    }
+  }
   // ----------------------------------------------------------------------
   // 💡 顯示層 - UI 繪製
   // ----------------------------------------------------------------------
@@ -275,27 +318,21 @@ class _DashboardPageState extends State<DashboardPage> {
           if (isConnected && widget.isSynced)
             const Icon(Icons.flash_on_rounded, size: 16, color: Colors.green),
           const SizedBox(width: 8),
-          CupertinoSwitch(
-            value: isConnected,
-            activeColor: const Color(0xFF0D9488),
-            onChanged: (val) async {
-              if (val) {
-                _showTopSnackBar('⏳ 正在連線至 ${sensor.name}...');
-                await _nativeService.connectToSensor(sensor.mac);
-                setState(() => sensor.isConnected = true);
-              } else {
-                // 💡 關鍵修復：呼叫斷線機制，防止殭屍連線！
-                _showTopSnackBar('⏹️ 正在斷開 ${sensor.name}...', color: Colors.grey);
-                await _nativeService.disconnectFromSensor(sensor.mac);
 
-                setState(() {
-                  sensor.isConnected = false;
-                  widget.onSyncStatusChanged(false); // 只要斷線任何一顆，就解除同步狀態
-                });
-              }
-              widget.onStateChanged();
-            },
-          ),
+          // 💡 判斷是否正在處理中
+          if (_isConnecting[sensor.mac] == true)
+          // 正在連線/斷線中 -> 顯示轉圈圈
+            const Padding(
+              padding: EdgeInsets.only(right: 8.0, left: 8.0),
+              child: CupertinoActivityIndicator(radius: 12, color: Color(0xFF0D9488)),
+            )
+          else
+          // 平常狀態 -> 顯示開關
+            CupertinoSwitch(
+              value: isConnected,
+              activeColor: const Color(0xFF0D9488),
+              onChanged: (val) => _toggleSensorConnection(sensor, val),
+            ), // ✅ 這裡結束後，直接接外層的 list 結尾
         ],
       ),
     );

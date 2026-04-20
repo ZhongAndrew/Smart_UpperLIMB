@@ -5,7 +5,7 @@
 // File: genc2_initialize.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 17-Mar-2026 16:54:33
+// C/C++ source code generated on  : 11-Apr-2026 09:59:25
 //
 
 #ifndef GENC2_INITIALIZE_H

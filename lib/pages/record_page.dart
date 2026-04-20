@@ -55,7 +55,11 @@ class _RecordPageState extends State<RecordPage> {
   final Map<String, List<double>> _gyrX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
-
+// 💡 [新增] 四元數的畫圖陣列
+  final Map<String, List<double>> _quatW = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
+  final Map<String, List<double>> _quatZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, ValueNotifier<int>> _chartTriggers = {
     "LFA": ValueNotifier(0), "RFA": ValueNotifier(0), "LA": ValueNotifier(0), "RA": ValueNotifier(0), "W": ValueNotifier(0)
   };
@@ -78,6 +82,11 @@ class _RecordPageState extends State<RecordPage> {
           double gX = _parseDouble(data['gyrX']);
           double gY = _parseDouble(data['gyrY']);
           double gZ = _parseDouble(data['gyrZ']);
+          // 💡 [新增] 將四元數存入畫圖陣列
+          _quatW[prefix]!.add(_latestSensorData['${prefix}_quatW']!);
+          _quatX[prefix]!.add(_latestSensorData['${prefix}_quatX']!);
+          _quatY[prefix]!.add(_latestSensorData['${prefix}_quatY']!);
+          _quatZ[prefix]!.add(_latestSensorData['${prefix}_quatZ']!);
 
           // 存入 AI 資料庫
           _latestSensorData['${prefix}_accX'] = aX;
@@ -100,6 +109,9 @@ class _RecordPageState extends State<RecordPage> {
             if (_accX[prefix]!.length > _maxDataPoints) {
               _accX[prefix]!.removeAt(0); _accY[prefix]!.removeAt(0); _accZ[prefix]!.removeAt(0);
               _gyrX[prefix]!.removeAt(0); _gyrY[prefix]!.removeAt(0); _gyrZ[prefix]!.removeAt(0);
+              // 💡 [新增] 保持四元數陣列長度
+              _quatW[prefix]!.removeAt(0); _quatX[prefix]!.removeAt(0);
+              _quatY[prefix]!.removeAt(0); _quatZ[prefix]!.removeAt(0);
             }
 
             _chartTriggers[prefix]!.value++;
@@ -127,11 +139,12 @@ class _RecordPageState extends State<RecordPage> {
 
   String _getPrefixFromMac(String mac) {
     switch (mac.toUpperCase()) {
-      case "D4:22:CD:00:7D:2D": return "LFA";
-      case "D4:22:CD:00:7E:FD": return "RFA";
-      case "D4:22:CD:00:7E:A6": return "LA";
-      case "D4:22:CD:00:7C:AA": return "RA";
-      case "D4:22:CD:00:7A:28": return "W";
+    // 💡 替換成你真實感測器的 MAC (需跟 Kotlin 那邊一模一樣)
+      case "D4:22:CD:00:7D:2D": return "LFA"; // 替換這裡
+      case "D4:22:CD:00:7E:FD": return "RFA"; // 替換這裡
+      case "D4:22:CD:00:7E:A6": return "LA";  // 替換這裡
+      case "D4:22:CD:00:7C:AA": return "RA";  // 替換這裡
+      case "D4:22:CD:00:7A:28": return "W";   // 替換這裡
       default: return "W";
     }
   }
