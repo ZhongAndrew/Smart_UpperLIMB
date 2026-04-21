@@ -80,12 +80,12 @@ class NativeService {
     if (_isInitialized) return;
     try {
       final dylib1 = Platform.isAndroid ? ffi.DynamicLibrary.open("libnative_l1.so") : ffi.DynamicLibrary.process();
-      _resetL1 = dylib1.lookupFunction<ResetNative, ResetDart>("reset_11");
-      _predictL1 = dylib1.lookupFunction<RunL1Native, RunL1Dart>("run_11");
+      _resetL1 = dylib1.lookupFunction<ResetNative, ResetDart>("reset_l1");
+      _predictL1 = dylib1.lookupFunction<RunL1Native, RunL1Dart>("run_l1");
 
       final dylib2 = Platform.isAndroid ? ffi.DynamicLibrary.open("libnative_l2.so") : ffi.DynamicLibrary.process();
-      _resetL2 = dylib2.lookupFunction<ResetNative, ResetDart>("reset_12");
-      _predictL2 = dylib2.lookupFunction<RunL2Native, RunL2Dart>("run_12");
+      _resetL2 = dylib2.lookupFunction<ResetNative, ResetDart>("reset_l2");
+      _predictL2 = dylib2.lookupFunction<RunL2Native, RunL2Dart>("run_l2");
 
       _isInitialized = true;
       print("✅ C++ 模型載入成功！");
