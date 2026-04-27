@@ -49,3 +49,10 @@ class ExerciseItem {
     this.unit = '次',
   });
 }
+
+class RawSensorPoint {
+  final int timestamp; // Android 傳來的 d.sampleTimeFine (硬體時間戳)
+  final List<double> values; // 依序存放: ax, ay, az, gx, gy, gz, qw, qx, qy, qz (共 10 個)
+
+  RawSensorPoint({required this.timestamp, required this.values});
+}

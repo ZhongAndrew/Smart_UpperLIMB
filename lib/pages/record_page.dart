@@ -5,6 +5,7 @@ import '../models/app_models.dart';
 
 import '../services/native_service.dart';
 import '../services/feature_service.dart';
+import '../services/data_processor.dart';
 
 enum RecordState { initial, calibrated, recording, completed }
 
@@ -27,6 +28,19 @@ class RecordPage extends StatefulWidget {
 }
 
 class _RecordPageState extends State<RecordPage> {
+
+  // 在 _RecordPageState 類別內新增：
+  final Map<String, List<RawSensorPoint>> _rawBuffers = {
+    "LFA": [],
+    "RFA": [],
+    "LA": [],
+    "RA": [],
+    "W": [],
+  };
+
+// 為了避免記憶體無限膨脹，我們設定一個最大暫存量 (例如 5 秒鐘的資料)
+// 60Hz * 5秒 = 300 筆
+  final int _maxBufferSize = 300;
   final PageController _pageController = PageController(viewportFraction: 0.9);
 
   final NativeService _nativeService = NativeService();
@@ -70,54 +84,42 @@ class _RecordPageState extends State<RecordPage> {
 
     _sensorSub = _nativeService.sensorDataStream.listen((data) {
       if (data is Map && data['event'] == 'DATA') {
-
         String prefix = data['sensorId']?.toString() ?? "W";
 
         if (orderedSensors.contains(prefix)) {
-
+          // 1. 統一解析 10 軸資料與時間戳
+          int ts = data['timestamp'] ?? 0;
           double aX = _parseDouble(data['accX']);
           double aY = _parseDouble(data['accY']);
           double aZ = _parseDouble(data['accZ']);
           double gX = _parseDouble(data['gyrX']);
           double gY = _parseDouble(data['gyrY']);
           double gZ = _parseDouble(data['gyrZ']);
-
-          // 💡 [修正] 直接從 data 解析四元數，並給予安全的預設值
           double qW = _parseDouble(data['quatW'] ?? 1.0);
           double qX = _parseDouble(data['quatX'] ?? 0.0);
           double qY = _parseDouble(data['quatY'] ?? 0.0);
           double qZ = _parseDouble(data['quatZ'] ?? 0.0);
 
-          // 存入 AI 資料庫 (覆蓋最新狀態)
-          _latestSensorData['${prefix}_accX'] = aX;
-          _latestSensorData['${prefix}_accY'] = aY;
-          _latestSensorData['${prefix}_accZ'] = aZ;
-          _latestSensorData['${prefix}_gyrX'] = gX;
-          _latestSensorData['${prefix}_gyrY'] = gY;
-          _latestSensorData['${prefix}_gyrZ'] = gZ;
-          _latestSensorData['${prefix}_quatW'] = qW;
-          _latestSensorData['${prefix}_quatX'] = qX;
-          _latestSensorData['${prefix}_quatY'] = qY;
-          _latestSensorData['${prefix}_quatZ'] = qZ;
+          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer (取代舊的 _latestSensorData)
+          List<double> vals = [aX, aY, aZ, gX, gY, gZ, qW, qX, qY, qZ];
+          _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: ts, values: vals));
 
-          // 存入畫圖陣列並更新畫面
+          // 維持 Buffer 最大長度
+          if (_rawBuffers[prefix]!.length > _maxBufferSize) {
+            _rawBuffers[prefix]!.removeAt(0);
+          }
+
+          // 3. 處理 UI 畫圖陣列 (保留你原本更新波形圖的功能)
           if (mounted) {
             _accX[prefix]!.add(aX); _accY[prefix]!.add(aY); _accZ[prefix]!.add(aZ);
             _gyrX[prefix]!.add(gX); _gyrY[prefix]!.add(gY); _gyrZ[prefix]!.add(gZ);
-
-            // 💡 [修正] 使用剛剛解析出來的 qW, qX, qY, qZ 存入畫圖陣列
-            _quatW[prefix]!.add(qW);
-            _quatX[prefix]!.add(qX);
-            _quatY[prefix]!.add(qY);
-            _quatZ[prefix]!.add(qZ);
+            _quatW[prefix]!.add(qW); _quatX[prefix]!.add(qX); _quatY[prefix]!.add(qY); _quatZ[prefix]!.add(qZ);
 
             if (_accX[prefix]!.length > _maxDataPoints) {
               _accX[prefix]!.removeAt(0); _accY[prefix]!.removeAt(0); _accZ[prefix]!.removeAt(0);
               _gyrX[prefix]!.removeAt(0); _gyrY[prefix]!.removeAt(0); _gyrZ[prefix]!.removeAt(0);
-              _quatW[prefix]!.removeAt(0); _quatX[prefix]!.removeAt(0);
-              _quatY[prefix]!.removeAt(0); _quatZ[prefix]!.removeAt(0);
+              _quatW[prefix]!.removeAt(0); _quatX[prefix]!.removeAt(0); _quatY[prefix]!.removeAt(0); _quatZ[prefix]!.removeAt(0);
             }
-
             _chartTriggers[prefix]!.value++;
           }
         }
@@ -196,51 +198,72 @@ class _RecordPageState extends State<RecordPage> {
     setState(() {
       _currentState = RecordState.recording;
       _recordingSeconds = 0;
-      _recordingBuffer.clear();
+      // 注意：這裡不用再清空 _recordingBuffer，也不用啟動 aiSampleTimer 了
     });
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if(mounted) setState(() => _recordingSeconds++);
     });
-
-    _aiSampleTimer = Timer.periodic(const Duration(milliseconds: 20), (timer) {
-      if (_currentState == RecordState.recording) {
-        List<double> currentFrame = [];
-        for (String p in orderedSensors) {
-          currentFrame.add(_latestSensorData['${p}_accX'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_accY'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_accZ'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_gyrX'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_gyrY'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_gyrZ'] ?? 0.0);
-        }
-        for (String p in orderedSensors) {
-          currentFrame.add(_latestSensorData['${p}_quatW'] ?? 1.0);
-          currentFrame.add(_latestSensorData['${p}_quatX'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_quatY'] ?? 0.0);
-          currentFrame.add(_latestSensorData['${p}_quatZ'] ?? 0.0);
-        }
-        _recordingBuffer.add(currentFrame);
-      }
-    });
   }
 
   void _stopRecording() {
     _recordingTimer?.cancel();
-    _aiSampleTimer?.cancel();
+    // 提醒：別忘了也要去 dispose() 裡面把 _aiSampleTimer?.cancel() 刪掉
 
     setState(() => _currentState = RecordState.completed);
 
-    int totalFrames = _recordingBuffer.length;
-    if (totalFrames < 256) {
-      _showTopSnackBar('⚠️ 錄製時間太短，收集不到 256 筆資料 (目前 $totalFrames 筆)，請重新錄製', color: Colors.orange);
+    // 1. 檢查 5 個 Buffer 是否都有收到足夠的資料
+    bool hasEnoughData = true;
+    int earliestEndTime = 0;
+
+    for (String sensor in orderedSensors) {
+      if (_rawBuffers[sensor]!.isEmpty) {
+        hasEnoughData = false;
+        break;
+      }
+      // 找出這 5 顆感測器中，「最晚抵達」的那筆時間戳
+      // 我們取最小值，確保這個 T_end 是 5 顆感測器共同擁有的時間點
+      int currentLastTs = _rawBuffers[sensor]!.last.timestamp;
+      if (earliestEndTime == 0 || currentLastTs < earliestEndTime) {
+        earliestEndTime = currentLastTs;
+      }
+    }
+
+    if (!hasEnoughData || earliestEndTime == 0) {
+      _showTopSnackBar('⚠️ 收集資料不足，請確認藍牙連線後重新錄製', color: Colors.orange);
       return;
     }
-    _showTopSnackBar('⏹️ 錄製結束！正在分析資料...', color: Colors.blue);
 
+    // 2. 準備裁切：定義 128Hz 的時間軸
+    double interval = 1000.0 / 128.0; // 7.8125 ms
+    double targetDuration = 256 * interval; // 約 2000 ms
+
+    // 從共同的終點往回推算起點
+    double tStart = earliestEndTime - targetDuration;
+
+    // 3. 發動 DataProcessor 引擎，產生完美的 256 幀！
+    List<List<double>> perfectWindowData = [];
+
+    for (int i = 0; i < 256; i++) {
+      double targetT = tStart + (i * interval);
+
+      // 呼叫你的演算法抽出單一幀 (包含 50 軸)
+      List<double>? frame = DataProcessor.extractSingleFrame50Axes(_rawBuffers, targetT);
+
+      if (frame != null) {
+        perfectWindowData.add(frame);
+      } else {
+        // 如果算不出 frame，代表你的錄製時間太短，Buffer 裡找不到 targetT 左邊的鄰居
+        _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒) 或是嚴重掉包，無法對齊特徵', color: Colors.orange);
+        return;
+      }
+    }
+
+    _showTopSnackBar('⏹️ 錄製結束！成功產生 ${perfectWindowData.length} 筆完美對齊資料', color: Colors.blue);
+
+    // 4. 將最完美的資料送進 AI 推論 (這部分與你原本邏輯一樣)
     try {
-      List<List<double>> windowData = _recordingBuffer.sublist(totalFrames - 256, totalFrames);
-      List<double> extractedFeatures = _featureService.extractFeatures(windowData);
+      List<double> extractedFeatures = _featureService.extractFeatures(perfectWindowData);
       int predictedActionId = _nativeService.predictRealAction(extractedFeatures);
 
       String actionName = "未知動作";
@@ -603,104 +626,3 @@ class _MultiLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MultiLinePainter oldDelegate) => true;
 }
-
-//   Widget _legendDot(Color color, String label) {
-//     return Row(
-//       children: [
-//         CircleAvatar(radius: 4, backgroundColor: color),
-//         const SizedBox(width: 4),
-//         Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
-//       ],
-//     );
-//   }
-// }
-
-// class _MultiLinePainter extends CustomPainter {
-//   final List<double> xData;
-//   final List<double> yData;
-//   final List<double> zData;
-//   final double minY;
-//   final double maxY;
-//   final int maxPoints;
-//
-//   _MultiLinePainter({
-//     required this.xData,
-//     required this.yData,
-//     required this.zData,
-//     required this.minY,
-//     required this.maxY,
-//     required this.maxPoints,
-//   });
-//
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final gridPaint = Paint()..color = Colors.grey.shade300..strokeWidth = 1;
-//     final textPainter = TextPainter(textDirection: TextDirection.ltr);
-//
-//     List<double> gridValues = [maxY, 0, minY];
-//     for (double val in gridValues) {
-//       double yPos = size.height - ((val - minY) / (maxY - minY)) * size.height;
-//       if (yPos >= 0 && yPos <= size.height) {
-//         canvas.drawLine(Offset(0, yPos), Offset(size.width, yPos), gridPaint);
-//
-//         textPainter.text = TextSpan(text: val.toInt().toString(), style: TextStyle(color: Colors.grey.shade500, fontSize: 10));
-//         textPainter.layout();
-//         double textY = yPos == 0 ? 2 : (yPos >= size.height ? size.height - 14 : yPos - 14);
-//         textPainter.paint(canvas, Offset(4, textY));
-//       }
-//     }
-//
-//     _drawLine(canvas, size, xData, Colors.orange);
-//     _drawLine(canvas, size, yData, Colors.blue);
-//     _drawLine(canvas, size, zData, Colors.green);
-//   }
-//
-//   void _drawLine(Canvas canvas, Size size, List<double> data, Color color) {
-//     // 如果 Android 完全沒傳資料過來，就提早跳出
-//     if (data.isEmpty) return;
-//
-//     final paint = Paint()
-//       ..color = color
-//       ..style = PaintingStyle.stroke
-//       ..strokeWidth = 1.5
-//       ..strokeJoin = StrokeJoin.round;
-//
-//     final path = Path();
-//     final double stepX = size.width / (maxPoints - 1);
-//
-//     bool hasStarted = false;
-//
-//     for (int i = 0; i < data.length; i++) {
-//       final double x = i * stepX;
-//       double val = data[i];
-//
-//       // 🛡️ 終極防禦：攔截 NaN 與 Infinity，直接當作 0.0 畫出來
-//       if (val.isNaN || val.isInfinite) {
-//         val = 0.0;
-//       }
-//
-//       // 計算 Y 座標
-//       double y = size.height - ((val - minY) / (maxY - minY)) * size.height;
-//
-//       // 限制 Y 座標不要過度超出畫布邊界
-//       y = y.clamp(-10.0, size.height + 10.0);
-//
-//       if (!hasStarted) {
-//         path.moveTo(x, y);
-//         hasStarted = true;
-//       } else {
-//         path.lineTo(x, y);
-//       }
-//     }
-//
-//     // 確保 Path 裡面有合法座標才執行繪製，防止閃退
-//     if (hasStarted) {
-//       canvas.drawPath(path, paint);
-//     }
-//   }
-//
-//   @override
-//   bool shouldRepaint(covariant _MultiLinePainter oldDelegate) {
-//     return true;
-//   }
-// }
