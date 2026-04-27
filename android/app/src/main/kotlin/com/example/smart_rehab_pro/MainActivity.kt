@@ -2,7 +2,6 @@ package com.example.smart_rehab_pro
 
 import android.os.Build
 import android.content.pm.PackageManager
-import android.os.Bundle
 import android.util.Log
 import android.bluetooth.BluetoothDevice
 import io.flutter.embedding.android.FlutterActivity
@@ -21,15 +20,18 @@ import com.xsens.dot.android.sdk.interfaces.DotDeviceCallback
 import com.xsens.dot.android.sdk.interfaces.DotMeasurementCallback
 import com.xsens.dot.android.sdk.interfaces.DotScannerCallback
 import com.xsens.dot.android.sdk.interfaces.DotSyncCallback
+import com.xsens.dot.android.sdk.models.DotSyncManager
 
 import java.util.ArrayList
 import java.util.HashMap
+import java.util.concurrent.ConcurrentHashMap
 
 class MainActivity: FlutterActivity(),
     DotDeviceCallback, DotMeasurementCallback, DotScannerCallback, DotSyncCallback {
 
     private var eventSink: EventChannel.EventSink? = null
     private var mDotScanner: DotScanner? = null
+    private var syncManager: DotSyncManager? = null
 
     // Force uppercase MAC addresses for consistent mapping
     private val sensorMacMap = mapOf(
@@ -40,7 +42,8 @@ class MainActivity: FlutterActivity(),
         "D4:22:CD:00:7A:28" to "W"
     )
 
-    private val connectedDevices = HashMap<String, DotDevice>()
+    // 使用 ConcurrentHashMap 提升多執行緒下操作藍牙設備的安全性
+    private val connectedDevices = ConcurrentHashMap<String, DotDevice>()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -48,6 +51,9 @@ class MainActivity: FlutterActivity(),
 
         DotSdk.setDebugEnabled(true)
         mDotScanner = DotScanner(applicationContext, this)
+
+        // 初始化硬體同步管理器
+        syncManager = DotSyncManager.getInstance(this)
 
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, "com.example/movella_stream")
             .setStreamHandler(object : EventChannel.StreamHandler {
@@ -61,7 +67,6 @@ class MainActivity: FlutterActivity(),
                     "startScan" -> { mDotScanner?.startScan(); result.success("OK") }
                     "stopScan" -> { mDotScanner?.stopScan(); result.success("OK") }
                     "connectSensor" -> {
-                        // 🛡️ 強制轉大寫，保證與 SDK 回傳的格式完全一致
                         val address = call.argument<String>("address")?.uppercase()
                         if (address != null) {
                             try {
@@ -83,37 +88,72 @@ class MainActivity: FlutterActivity(),
                             result.success("OK")
                         }
                     }
-                    "startFreeMeasure" -> {
+
+                    // 🚨 修改 1：優雅的準備流程，不暴力喚醒
+                    "prepareSensors" -> {
                         if (connectedDevices.isEmpty()) {
-                            result.error("MEASURE_ERROR", "請至少連線 1 顆感測器", null)
+                            result.error("ERROR", "請至少連線 1 顆感測器", null)
                             return@setMethodCallHandler
                         }
 
                         Thread {
-                            for (i in 0..100 step 25) {
-                                runOnUiThread { eventSink?.success(hashMapOf("event" to "SYNC_PROGRESS", "progress" to i)) }
+                            Log.d("XsensSync", "prepareSensors: 階段 1 - 清除舊有同步狀態")
+                            syncManager?.stopSyncing()
+                            Thread.sleep(1500) // 給予 SDK 充裕時間釋放資源
+
+                            Log.d("XsensSync", "prepareSensors: 階段 2 - 確保停止測量並設定 Payload Mode")
+                            for (device in connectedDevices.values) {
+                                device.stopMeasuring() // 確保完全安靜
+                                Thread.sleep(200) // 給予藍牙指令緩衝，避免 GATT 塞車
+
+                                device.measurementMode = DotPayload.PAYLOAD_TYPE_CUSTOM_MODE_5
                                 Thread.sleep(200)
                             }
 
-                            for (device in connectedDevices.values) {
-                                // 🛑 先強制停止
-                                device.stopMeasuring()
-                                Thread.sleep(150) // 🛡️ 加入 150ms 緩衝，讓藍牙消化停止指令
-
-                                // ✅ 切換模式
-                                device.measurementMode = DotPayload.PAYLOAD_TYPE_CUSTOM_MODE_5
-
-                                // ✅ 開始測量
-                                device.startMeasuring()
-                                Thread.sleep(300) // 🛡️ 加入 200ms 緩衝，確保這顆感測器啟動完成才叫下一顆
-                            }
-
-                            runOnUiThread {
-                                eventSink?.success(hashMapOf("event" to "SYNC_DONE", "isSynced" to true))
-                            }
+                            Log.d("XsensSync", "prepareSensors 完成，感測器已完全靜默並準備好參數")
+                            runOnUiThread { result.success("準備完成") }
                         }.start()
+                    }
 
-                        result.success("已強制開啟直通模式")
+                    // 🚨 修改 2：固定 Root 節點發射同步
+                    "startHardwareSync" -> {
+                        if (connectedDevices.size < 2) {
+                            result.error("SYNC_ERROR", "同步至少需要 2 顆感測器連線", null)
+                            return@setMethodCallHandler
+                        }
+
+                        runOnUiThread {
+                            Log.d("XsensSync", "準備同步，裝置數量: ${connectedDevices.size}")
+
+                            // 尋找標籤為 "W" 的感測器作為 Root，確保物理訊號最穩
+                            val rootMac = sensorMacMap.entries.firstOrNull { it.value == "W" }?.key
+                            val rootDevice = connectedDevices[rootMac]
+
+                            val deviceList = ArrayList<DotDevice>()
+                            if (rootDevice != null) {
+                                deviceList.add(rootDevice) // Root 永遠排第一位 (index 0)
+                                deviceList.addAll(connectedDevices.values.filter { it.address != rootMac }.sortedBy { it.address })
+                            } else {
+                                // 如果沒連上 W，再退化成預設排序
+                                deviceList.addAll(connectedDevices.values.sortedBy { it.address })
+                            }
+
+                            val startSuccess = syncManager?.startSyncing(deviceList, 0) ?: false
+                            Log.d("XsensSync", "startSyncing 回傳: $startSuccess")
+
+                            if (startSuccess) {
+                                result.success("同步指令已發射")
+                            } else {
+                                result.error("SYNC_FAIL", "SDK 拒絕執行同步", null)
+                            }
+                        }
+                    }
+
+                    "startFreeMeasure" -> {
+                        for (device in connectedDevices.values) {
+                            device.startMeasuring()
+                        }
+                        result.success("直通模式已啟動")
                     }
                     else -> result.notImplemented()
                 }
@@ -121,6 +161,7 @@ class MainActivity: FlutterActivity(),
     }
 
     override fun onDotInitDone(address: String?) {
+        // 設定傳輸頻率為 60Hz
         connectedDevices[address]?.setOutputRate(60)
     }
 
@@ -129,7 +170,6 @@ class MainActivity: FlutterActivity(),
         val mac = address?.uppercase() ?: return
         val sensorId = sensorMacMap[mac] ?: "W"
 
-        // 💡 捨棄 getFreeAcc()，直接使用 getAcc() 來獲取包含重力的加速度
         val acc = d.getAcc()
         val freeAcc = d.getFreeAcc()
         val gyr = d.getGyr()
@@ -139,51 +179,9 @@ class MainActivity: FlutterActivity(),
         singleDataMap["event"] = "DATA"
         singleDataMap["sensorId"] = sensorId
         singleDataMap["mac"] = mac
+        singleDataMap["timestamp"] = d.sampleTimeFine
 
-        // We assume the Xsens SDK returns the correct length array (3 for vectors, 4 for quats).
-        // Using try-catch as a final safety net to prevent any background thread crashes.
-//        try {
-//            // 💡 把 acc 放進 Map 傳給 Flutter
-//            singleDataMap["accX"] = acc[0]
-//            singleDataMap["accY"] = acc[1]
-//            singleDataMap["accZ"] = acc[2]
-//        } catch (e: Exception) {
-//            singleDataMap["accX"] = 0.0
-//            singleDataMap["accY"] = 0.0
-//            singleDataMap["accZ"] = 0.0
-//        }
-//        try {
-//            // 💡 確保傳給 Flutter 的是純粹的 FreeAcc
-//            singleDataMap["accX"] = freeAcc[0]
-//            singleDataMap["accY"] = freeAcc[1]
-//            singleDataMap["accZ"] = freeAcc[2]
-//        } catch (e: Exception) {
-//            singleDataMap["accX"] = 0.0
-//            singleDataMap["accY"] = 0.0
-//            singleDataMap["accZ"] = 0.0
-//        }
-//        try {
-//            singleDataMap["gyrX"] = gyr[0]
-//            singleDataMap["gyrY"] = gyr[1]
-//            singleDataMap["gyrZ"] = gyr[2]
-//        } catch (e: Exception) {
-//            singleDataMap["gyrX"] = 0.0
-//            singleDataMap["gyrY"] = 0.0
-//            singleDataMap["gyrZ"] = 0.0
-//        }
-//
-//        try {
-//            singleDataMap["quatW"] = quat[0].toDouble()
-//            singleDataMap["quatX"] = quat[1].toDouble()
-//            singleDataMap["quatY"] = quat[2].toDouble()
-//            singleDataMap["quatZ"] = quat[3].toDouble()
-//        } catch (e: Exception) {
-//            singleDataMap["quatW"] = 1.0
-//            singleDataMap["quatX"] = 0.0
-//            singleDataMap["quatY"] = 0.0
-//            singleDataMap["quatZ"] = 0.0
-//        }
-        // 🌟 1. 處理加速度
+        // 處理加速度
         if (acc != null && acc.size >= 3) {
             singleDataMap["accX"] = acc[0].toDouble()
             singleDataMap["accY"] = acc[1].toDouble()
@@ -193,38 +191,35 @@ class MainActivity: FlutterActivity(),
             singleDataMap["accY"] = freeAcc[1].toDouble()
             singleDataMap["accZ"] = freeAcc[2].toDouble()
         } else {
-            // 💡 加上這行 Log，如果 Payload 設錯，Logcat 會狂刷這條訊息
-            Log.w("XsensData", "[$mac] 加速度資料為空！已自動補 0。請檢查 Payload 設定或藍牙連線。")
             singleDataMap["accX"] = 0.0
             singleDataMap["accY"] = 0.0
             singleDataMap["accZ"] = 0.0
         }
 
-// 🌟 2. 處理陀螺儀
+        // 處理陀螺儀
         if (gyr != null && gyr.size >= 3) {
             singleDataMap["gyrX"] = gyr[0].toDouble()
             singleDataMap["gyrY"] = gyr[1].toDouble()
             singleDataMap["gyrZ"] = gyr[2].toDouble()
         } else {
-            Log.w("XsensData", "[$mac] 陀螺儀資料為空！已自動補 0。")
             singleDataMap["gyrX"] = 0.0
             singleDataMap["gyrY"] = 0.0
             singleDataMap["gyrZ"] = 0.0
         }
 
-// 🌟 3. 處理四元數
+        // 處理四元數
         if (quat != null && quat.size >= 4) {
             singleDataMap["quatW"] = quat[0].toDouble()
             singleDataMap["quatX"] = quat[1].toDouble()
             singleDataMap["quatY"] = quat[2].toDouble()
             singleDataMap["quatZ"] = quat[3].toDouble()
         } else {
-            Log.w("XsensData", "[$mac] 四元數資料為空！已自動還原為單位四元數。")
             singleDataMap["quatW"] = 1.0
             singleDataMap["quatX"] = 0.0
             singleDataMap["quatY"] = 0.0
             singleDataMap["quatZ"] = 0.0
         }
+
         runOnUiThread { eventSink?.success(singleDataMap) }
     }
 
@@ -254,13 +249,61 @@ class MainActivity: FlutterActivity(),
         mDotScanner?.stopScan()
     }
 
-    // --- Required empty implementations ---
+    // --- 🌟 真正的硬體同步 Callback 實作區塊 ---
+
+    override fun onSyncingStarted(address: String?, isSuccess: Boolean, requestCode: Int) {
+        if (isSuccess) {
+            runOnUiThread {
+                eventSink?.success(hashMapOf("event" to "SYNC_STATUS", "status" to "STARTED"))
+            }
+        }
+    }
+
+    override fun onSyncingProgress(progress: Int, requestCode: Int) {
+        runOnUiThread {
+            eventSink?.success(hashMapOf("event" to "SYNC_PROGRESS", "progress" to progress))
+        }
+    }
+
+    // 🚨 修改 3：甦醒緩衝機制
+    override fun onSyncingDone(syncingResultMap: HashMap<String, Boolean>, isSuccess: Boolean, requestCode: Int) {
+        if (isSuccess) {
+            Log.d("XsensSync", "同步完美成功！準備啟動資料測量...")
+            Thread {
+                // 🌟 核心防線：硬體對時完成後，給予剛甦醒的藍牙 2 秒鐘穩固連線
+                Thread.sleep(2000)
+
+                // 依序啟動測量，並給予間隔，避免 5 顆感測器瞬間同時噴發資料導致底層崩潰
+                for (device in connectedDevices.values) {
+                    device.startMeasuring()
+                    Thread.sleep(250)
+                }
+
+                runOnUiThread {
+                    eventSink?.success(hashMapOf("event" to "SYNC_DONE", "isSynced" to true))
+                }
+            }.start()
+        } else {
+            // 挑出失敗的感測器名稱方便 Debug
+            val failedSensors = syncingResultMap.filter { !it.value }.keys.map { mac ->
+                sensorMacMap[mac.uppercase()] ?: mac
+            }
+            val errorMsg = if (failedSensors.isNotEmpty()) "同步失敗！問題感測器：${failedSensors.joinToString()}" else "同步超時，請重啟感測器"
+            Log.e("XsensSync", errorMsg)
+
+            runOnUiThread {
+                eventSink?.success(hashMapOf("event" to "SYNC_DONE", "isSynced" to false, "error" to errorMsg))
+            }
+        }
+    }
+
+    override fun onSyncingResult(address: String?, isSuccess: Boolean, requestCode: Int) {
+        Log.d("XsensSync", "Sensor $address sync result: $isSuccess")
+    }
+
+    // 其餘留空的 Required implementations
     override fun onDotConnectionChanged(address: String?, state: Int) {}
-    override fun onSyncingStarted(address: String?, isSuccess: Boolean, requestCode: Int) {}
-    override fun onSyncingProgress(progress: Int, requestCode: Int) {}
-    override fun onSyncingResult(address: String?, isSuccess: Boolean, requestCode: Int) {}
     override fun onSyncingStopped(address: String?, isSuccess: Boolean, requestCode: Int) {}
-    override fun onSyncingDone(syncingResultMap: HashMap<String, Boolean>, isSuccess: Boolean, requestCode: Int) {}
     override fun onDotOutputRateUpdate(address: String?, outputRate: Int) {}
     override fun onDotBatteryChanged(address: String?, status: Int, percentage: Int) {}
     override fun onDotButtonClicked(address: String?, timestamp: Long) {}
