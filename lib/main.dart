@@ -18,7 +18,7 @@ void main() async{
   String testFilePath = 'assets/s1_rawData.csv';
 
   // 執行我們上一回合寫的虛擬藍牙發射器
-  //await MockBluetoothTester.runTest(testFilePath);
+  await MockBluetoothTester.runTest(testFilePath);
   runApp(const MyApp());
 }
 
