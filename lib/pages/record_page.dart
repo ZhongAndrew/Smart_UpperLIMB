@@ -261,16 +261,40 @@ class _RecordPageState extends State<RecordPage> {
 
     _showTopSnackBar('⏹️ 錄製結束！成功產生 ${perfectWindowData.length} 筆完美對齊資料', color: Colors.blue);
 
-    // 4. 將最完美的資料送進 AI 推論 (這部分與你原本邏輯一樣)
+    // 4. 將最完美的資料送進 AI 推論
     try {
       List<double> extractedFeatures = _featureService.extractFeatures(perfectWindowData);
       int predictedActionId = _nativeService.predictRealAction(extractedFeatures);
 
-      String actionName = "未知動作";
-      if (predictedActionId == -1) actionName = "無動作(靜止)";
-      else if (predictedActionId == 1) actionName = "前平舉";
+      // 💡 建立 ID 與動作名稱的對應字典 (Label Map)
+      final Map<int, String> actionMap = {
+        0:  "無動作 (靜止)",
+        1:  "左側前平舉",
+        2:  "左側側平舉",
+        3:  "左側後平舉",
+        4:  "左側水平外展",
+        5:  "左側水平內收",
+        6:  "左側前向肩輪(順)",
+        7:  "左側前向肩輪(逆)",
+        8:  "左側側向肩輪(順)",
+        9:  "左側側向肩輪(逆)",
+        10:  "右側前平舉",
+        11:  "右側側平舉",
+        12:  "右側後平舉",
+        13:  "右側水平外展",
+        14:  "右側水平內收",
+        15:  "右側前向肩輪(順)",
+        16:  "右側前向肩輪(逆)",
+        17:  "右側側向肩輪(順)",
+        18:  "右側側向肩輪(逆)",
+      };
 
+      // 利用字典查詢動作名稱。如果查不到 (例如模型吐出 99)，就顯示 "未知動作 (ID: 99)" 方便除錯
+      String actionName = actionMap[predictedActionId] ?? "未知動作 (ID: $predictedActionId)";
+
+      // 顯示最終結果
       _showTopSnackBar('✅ 分析完成！判定動作為：$actionName');
+
     } catch (e) {
       _showTopSnackBar('❌ 分析失敗: $e', color: Colors.red);
     }
