@@ -113,6 +113,9 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  // ----------------------------------------------------------------------
+  // 💡 互動層 - 使用者按鈕操作 (已改為假同步機制)
+  // ----------------------------------------------------------------------
   void _executeHardwareSync() async {
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
 
@@ -128,11 +131,45 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    // 啟動進度條並呼叫直通模式
+    // 1. 顯示轉圈圈的進度對話框
     _showSyncProgressDialog();
 
-    // 💡 關鍵：現在我們不呼叫 HardwareSync，而是強制直通！
-    await _nativeService.startFreeMeasure();
+    // 2. 初始化進度為 0
+    setState(() {
+      _syncProgress = 0;
+    });
+
+    // 3. 設定計時器，每 100 毫秒增加 1% 進度 (100 次 * 100ms = 10 秒)
+    Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+      // 若頁面已銷毀或對話框被強制關閉，則停止計時
+      if (!mounted || !_isSyncDialogShowing) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _syncProgress += 1;
+      });
+
+      // 4. 當進度達到 100% 時，執行放行邏輯
+      if (_syncProgress >= 100) {
+        timer.cancel();
+
+        // 關閉進度對話框
+        if (_isSyncDialogShowing) {
+          Navigator.of(context).pop();
+          _isSyncDialogShowing = false;
+        }
+
+        // 💡 關鍵：雖然是假同步，但必須呼叫底層開始測量，否則錄製頁面會收不到資料
+        await _nativeService.startFreeMeasure();
+
+        // 提示使用者並開放進入錄製頁面
+        _showTopSnackBar('✅ 模擬同步完成！已開放進入錄製', color: const Color(0xFF10B981));
+        widget.onSyncStatusChanged(true); // 放行權限
+        widget.onStateChanged(); // 更新 UI 狀態
+      }
+    });
   }
   // 💡 [加入這裡]：處理防呆與延遲連線
   Future<void> _toggleSensorConnection(Sensor sensor, bool connect) async {
