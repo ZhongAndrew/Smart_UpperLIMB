@@ -210,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
                     key: ValueKey<bool>(isLoginMode),
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 狀態標題
+                      // 狀態標題 陳 小名
                       Text(
                           isLoginMode ? '登入' : '註冊新帳號',
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))

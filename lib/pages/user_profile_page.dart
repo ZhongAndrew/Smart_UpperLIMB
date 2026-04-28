@@ -55,7 +55,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF0D9488), onPrimary: Colors.white, onSurface: Color(0xFF1E293B)),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF0D9488),
+                onPrimary: Colors.white, onSurface: Color(0xFF1E293B)),
           ),
           child: child!,
         );
