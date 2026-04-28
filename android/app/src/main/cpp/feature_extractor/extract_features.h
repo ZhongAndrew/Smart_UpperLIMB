@@ -5,7 +5,7 @@
 // File: extract_features.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 #ifndef EXTRACT_FEATURES_H
@@ -18,7 +18,7 @@
 
 // Function Declarations
 namespace feature_exraction {
-extern void extract_features(const double windowData[12800],
+extern void extract_features(const double windowData[6400],
                              double features[280]);
 
 }

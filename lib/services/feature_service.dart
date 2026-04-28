@@ -39,19 +39,19 @@ class FeatureService {
     if (!_isInitialized) init();
 
     // 嚴格的安全防護：確保維度絕對正確
-    if (windowData.length != 256 || windowData[0].length != 50) {
+    if (windowData.length != 128 || windowData[0].length != 50) {
       throw Exception('輸入資料維度錯誤！必須是 256 x 50');
     }
 
     // 配置給 C++ 用的記憶體空間
-    final ffi.Pointer<ffi.Double> inputPtr = calloc<ffi.Double>(256 * 50);
+    final ffi.Pointer<ffi.Double> inputPtr = calloc<ffi.Double>(128 * 50);
     final ffi.Pointer<ffi.Double> outputPtr = calloc<ffi.Double>(280);
 
     try {
       // 壓平矩陣 (Column-major，完全對齊 MATLAB 記憶體排列習慣)
-      for (int i = 0; i < 256; i++) {
+      for (int i = 0; i < 128; i++) {
         for (int j = 0; j < 50; j++) {
-          inputPtr[j * 256 + i] = windowData[i][j];
+          inputPtr[j * 128 + i] = windowData[i][j];
         }
       }
 
