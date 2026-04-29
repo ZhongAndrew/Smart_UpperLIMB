@@ -5,7 +5,7 @@
 // File: sum.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 // Include Files
@@ -15,19 +15,19 @@
 
 // Function Definitions
 //
-// Arguments    : const double x[1024]
-//                double y[256]
+// Arguments    : const double x[512]
+//                double y[128]
 // Return Type  : void
 //
 namespace feature_exraction {
 namespace coder {
-void sum(const double x[1024], double y[256])
+void sum(const double x[512], double y[128])
 {
-  std::copy(&x[0], &x[256], &y[0]);
+  std::copy(&x[0], &x[128], &y[0]);
   for (int k{0}; k < 3; k++) {
     int xoffset;
-    xoffset = (k + 1) << 8;
-    for (int xj{0}; xj < 256; xj++) {
+    xoffset = (k + 1) << 7;
+    for (int xj{0}; xj < 128; xj++) {
       y[xj] += x[xoffset + xj];
     }
   }

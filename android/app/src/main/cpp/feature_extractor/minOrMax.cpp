@@ -5,7 +5,7 @@
 // File: minOrMax.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 // Include Files
@@ -15,13 +15,13 @@
 
 // Function Definitions
 //
-// Arguments    : const double x[256]
+// Arguments    : const double x[128]
 // Return Type  : double
 //
 namespace feature_exraction {
 namespace coder {
 namespace internal {
-double maximum(const double x[256])
+double maximum(const double x[128])
 {
   double ex;
   int idx;
@@ -33,7 +33,7 @@ double maximum(const double x[256])
     idx = 0;
     k = 2;
     exitg1 = false;
-    while ((!exitg1) && (k < 257)) {
+    while ((!exitg1) && (k < 129)) {
       if (!std::isnan(x[k - 1])) {
         idx = k;
         exitg1 = true;
@@ -47,7 +47,7 @@ double maximum(const double x[256])
   } else {
     ex = x[idx - 1];
     idx++;
-    for (int b_k{idx}; b_k < 257; b_k++) {
+    for (int b_k{idx}; b_k < 129; b_k++) {
       double d;
       d = x[b_k - 1];
       if (ex < d) {
@@ -59,11 +59,11 @@ double maximum(const double x[256])
 }
 
 //
-// Arguments    : const double x[129]
+// Arguments    : const double x[65]
 //                int &idx
 // Return Type  : double
 //
-double maximum(const double x[129], int &idx)
+double maximum(const double x[65], int &idx)
 {
   double ex;
   int b_idx;
@@ -75,7 +75,7 @@ double maximum(const double x[129], int &idx)
     b_idx = 0;
     k = 2;
     exitg1 = false;
-    while ((!exitg1) && (k < 130)) {
+    while ((!exitg1) && (k < 66)) {
       if (!std::isnan(x[k - 1])) {
         b_idx = k;
         exitg1 = true;
@@ -91,7 +91,7 @@ double maximum(const double x[129], int &idx)
     ex = x[b_idx - 1];
     idx = b_idx;
     b_idx++;
-    for (int b_k{b_idx}; b_k < 130; b_k++) {
+    for (int b_k{b_idx}; b_k < 66; b_k++) {
       double d;
       d = x[b_k - 1];
       if (ex < d) {
@@ -104,10 +104,10 @@ double maximum(const double x[129], int &idx)
 }
 
 //
-// Arguments    : const double x[256]
+// Arguments    : const double x[128]
 // Return Type  : double
 //
-double minimum(const double x[256])
+double minimum(const double x[128])
 {
   double ex;
   int idx;
@@ -119,7 +119,7 @@ double minimum(const double x[256])
     idx = 0;
     k = 2;
     exitg1 = false;
-    while ((!exitg1) && (k < 257)) {
+    while ((!exitg1) && (k < 129)) {
       if (!std::isnan(x[k - 1])) {
         idx = k;
         exitg1 = true;
@@ -133,7 +133,7 @@ double minimum(const double x[256])
   } else {
     ex = x[idx - 1];
     idx++;
-    for (int b_k{idx}; b_k < 257; b_k++) {
+    for (int b_k{idx}; b_k < 129; b_k++) {
       double d;
       d = x[b_k - 1];
       if (ex > d) {

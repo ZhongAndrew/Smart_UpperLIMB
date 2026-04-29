@@ -5,7 +5,7 @@
 // File: predictOneWithCache.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:57:11
+// C/C++ source code generated on  : 28-Apr-2026 21:37:07
 //
 
 // Include Files
@@ -1967,6 +1967,49 @@ void w_predictOneWithCache(const double X[280], double cachedScore[2],
 //                double &cachedWeights
 //                const char combiner[15]
 //                const
+//                ::layer1::coder::classreg::learning::classif::wb_CompactClassificationTree
+//                &weak_learner bool &cached double score[2]
+// Return Type  : void
+//
+void wb_predictOneWithCache(const double X[280], double cachedScore[2],
+                            double &cachedWeights, const char combiner[15],
+                            const ::layer1::coder::classreg::learning::classif::
+                                wb_CompactClassificationTree &weak_learner,
+                            bool &cached, double score[2])
+{
+  double dv[2];
+  int k;
+  bool exitg1;
+  bool y;
+  weak_learner.predict(X, dv);
+  y = false;
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k < 2)) {
+    if (std::isnan(cachedScore[k])) {
+      y = true;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  if (y) {
+    if (std::isnan(cachedScore[0])) {
+      cachedScore[0] = 0.0;
+    }
+    if (std::isnan(cachedScore[1])) {
+      cachedScore[1] = 0.0;
+    }
+  }
+  updateCache(dv, cachedScore, cachedWeights, cached, combiner, score);
+}
+
+//
+// Arguments    : const double X[280]
+//                double cachedScore[2]
+//                double &cachedWeights
+//                const char combiner[15]
+//                const
 //                ::layer1::coder::classreg::learning::classif::x_CompactClassificationTree
 //                &weak_learner bool &cached double score[2]
 // Return Type  : void
@@ -1976,6 +2019,49 @@ void x_predictOneWithCache(const double X[280], double cachedScore[2],
                            const ::layer1::coder::classreg::learning::classif::
                                x_CompactClassificationTree &weak_learner,
                            bool &cached, double score[2])
+{
+  double dv[2];
+  int k;
+  bool exitg1;
+  bool y;
+  weak_learner.predict(X, dv);
+  y = false;
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k < 2)) {
+    if (std::isnan(cachedScore[k])) {
+      y = true;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  if (y) {
+    if (std::isnan(cachedScore[0])) {
+      cachedScore[0] = 0.0;
+    }
+    if (std::isnan(cachedScore[1])) {
+      cachedScore[1] = 0.0;
+    }
+  }
+  updateCache(dv, cachedScore, cachedWeights, cached, combiner, score);
+}
+
+//
+// Arguments    : const double X[280]
+//                double cachedScore[2]
+//                double &cachedWeights
+//                const char combiner[15]
+//                const
+//                ::layer1::coder::classreg::learning::classif::xb_CompactClassificationTree
+//                &weak_learner bool &cached double score[2]
+// Return Type  : void
+//
+void xb_predictOneWithCache(const double X[280], double cachedScore[2],
+                            double &cachedWeights, const char combiner[15],
+                            const ::layer1::coder::classreg::learning::classif::
+                                xb_CompactClassificationTree &weak_learner,
+                            bool &cached, double score[2])
 {
   double dv[2];
   int k;

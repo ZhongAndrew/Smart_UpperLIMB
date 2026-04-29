@@ -5,7 +5,7 @@
 // File: atan2.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 // Include Files
@@ -16,16 +16,16 @@
 
 // Function Definitions
 //
-// Arguments    : const double y[256]
-//                const double x[256]
-//                double r[256]
+// Arguments    : const double y[128]
+//                const double x[128]
+//                double r[128]
 // Return Type  : void
 //
 namespace feature_exraction {
 namespace coder {
-void b_atan2(const double y[256], const double x[256], double r[256])
+void b_atan2(const double y[128], const double x[128], double r[128])
 {
-  for (int k{0}; k < 256; k++) {
+  for (int k{0}; k < 128; k++) {
     double d;
     double d1;
     d = y[k];

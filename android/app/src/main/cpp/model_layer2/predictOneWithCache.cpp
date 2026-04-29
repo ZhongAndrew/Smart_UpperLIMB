@@ -5,7 +5,7 @@
 // File: predictOneWithCache.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 28-Apr-2026 21:42:54
 //
 
 // Include Files
@@ -2428,52 +2428,6 @@ void rb_predictOneWithCache(const double X[280], double cachedScore[18],
                             double &cachedWeights, const char combiner[15],
                             const ::layer2::coder::classreg::learning::classif::
                                 rb_CompactClassificationTree &weak_learner,
-                            bool &cached, bool initCache, double score[18])
-{
-  double dv[18];
-  weak_learner.predict(X, dv);
-  if (initCache) {
-    std::memset(&cachedScore[0], 0, 18U * sizeof(double));
-  } else {
-    int k;
-    bool exitg1;
-    bool y;
-    y = false;
-    k = 0;
-    exitg1 = false;
-    while ((!exitg1) && (k <= 17)) {
-      if (std::isnan(cachedScore[k])) {
-        y = true;
-        exitg1 = true;
-      } else {
-        k++;
-      }
-    }
-    if (y) {
-      for (int i{0}; i < 18; i++) {
-        if (std::isnan(cachedScore[i])) {
-          cachedScore[i] = 0.0;
-        }
-      }
-    }
-  }
-  updateCache(dv, cachedScore, cachedWeights, cached, combiner, score);
-}
-
-//
-// Arguments    : const double X[280]
-//                double cachedScore[18]
-//                double &cachedWeights
-//                const char combiner[15]
-//                const
-//                ::layer2::coder::classreg::learning::classif::rc_CompactClassificationTree
-//                &weak_learner bool &cached bool initCache double score[18]
-// Return Type  : void
-//
-void rc_predictOneWithCache(const double X[280], double cachedScore[18],
-                            double &cachedWeights, const char combiner[15],
-                            const ::layer2::coder::classreg::learning::classif::
-                                rc_CompactClassificationTree &weak_learner,
                             bool &cached, bool initCache, double score[18])
 {
   double dv[18];

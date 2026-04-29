@@ -6,8 +6,8 @@ import 'package:smart_rehab_pro/utils/csv_exporter.dart'; // 如果你想保留�
 
 class RehabPipeline {
   // --- 系統常數 ---
-  final int windowSize = 256;
-  final int stepSize = 16;
+  final int windowSize = 128;
+  final int stepSize = 8;
 
   // --- 狀態變數 (記憶體暫存) ---
   final List<List<double>> _windowBuffer = [];

@@ -5,7 +5,7 @@
 // File: std.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 // Include Files
@@ -15,24 +15,24 @@
 
 // Function Definitions
 //
-// Arguments    : const double x[256]
+// Arguments    : const double x[128]
 // Return Type  : double
 //
 namespace feature_exraction {
 namespace coder {
-double b_std(const double x[256])
+double b_std(const double x[128])
 {
   double scale;
   double xbar;
   double y;
   xbar = x[0];
-  for (int k{0}; k < 255; k++) {
+  for (int k{0}; k < 127; k++) {
     xbar += x[k + 1];
   }
-  xbar /= 256.0;
+  xbar /= 128.0;
   y = 0.0;
   scale = 3.3121686421112381E-170;
-  for (int k{0}; k < 256; k++) {
+  for (int k{0}; k < 128; k++) {
     double d;
     d = std::abs(x[k] - xbar);
     if (d > scale) {
@@ -47,7 +47,7 @@ double b_std(const double x[256])
     }
   }
   y = scale * std::sqrt(y);
-  y /= 15.968719422671311;
+  y /= 11.269427669584644;
   return y;
 }
 
