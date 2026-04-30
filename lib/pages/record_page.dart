@@ -7,7 +7,8 @@ import '../services/native_service.dart';
 import '../services/feature_service.dart';
 import '../services/data_processor.dart';
 
-enum RecordState { initial, calibrated, recording, completed }
+// 💡 1. 移除 calibrated 狀態
+enum RecordState { initial, recording, completed }
 
 class RecordPage extends StatefulWidget {
   final List<Sensor> sensors;
@@ -29,7 +30,6 @@ class RecordPage extends StatefulWidget {
 
 class _RecordPageState extends State<RecordPage> {
 
-  // 在 _RecordPageState 類別內新增：
   final Map<String, List<RawSensorPoint>> _rawBuffers = {
     "LFA": [],
     "RFA": [],
@@ -38,8 +38,6 @@ class _RecordPageState extends State<RecordPage> {
     "W": [],
   };
 
-// 為了避免記憶體無限膨脹，我們設定一個最大暫存量 (例如 5 秒鐘的資料)
-// 60Hz * 5秒 = 300 筆
   final int _maxBufferSize = 300;
   final PageController _pageController = PageController(viewportFraction: 0.9);
 
@@ -62,14 +60,13 @@ class _RecordPageState extends State<RecordPage> {
 
   final int _maxDataPoints = 100;
 
-  // 💡 絕對通道：以 LFA, RFA 等標籤作為通道，不再依賴 MAC 避免大小寫串線
   final Map<String, List<double>> _accX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _accY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _accZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
-// 💡 [新增] 四元數的畫圖陣列
+
   final Map<String, List<double>> _quatW = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _quatX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _quatY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
@@ -87,7 +84,6 @@ class _RecordPageState extends State<RecordPage> {
         String prefix = data['sensorId']?.toString() ?? "W";
 
         if (orderedSensors.contains(prefix)) {
-          // 1. 統一解析 10 軸資料與時間戳
           int ts = data['timestamp'] ?? 0;
           double aX = _parseDouble(data['accX']);
           double aY = _parseDouble(data['accY']);
@@ -100,16 +96,13 @@ class _RecordPageState extends State<RecordPage> {
           double qY = _parseDouble(data['quatY'] ?? 0.0);
           double qZ = _parseDouble(data['quatZ'] ?? 0.0);
 
-          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer (取代舊的 _latestSensorData)
           List<double> vals = [aX, aY, aZ, gX, gY, gZ, qW, qX, qY, qZ];
           _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: ts, values: vals));
 
-          // 維持 Buffer 最大長度
           if (_rawBuffers[prefix]!.length > _maxBufferSize) {
             _rawBuffers[prefix]!.removeAt(0);
           }
 
-          // 3. 處理 UI 畫圖陣列 (保留你原本更新波形圖的功能)
           if (mounted) {
             _accX[prefix]!.add(aX); _accY[prefix]!.add(aY); _accZ[prefix]!.add(aZ);
             _gyrX[prefix]!.add(gX); _gyrY[prefix]!.add(gY); _gyrZ[prefix]!.add(gZ);
@@ -145,12 +138,11 @@ class _RecordPageState extends State<RecordPage> {
 
   String _getPrefixFromMac(String mac) {
     switch (mac.toUpperCase()) {
-    // 💡 替換成你真實感測器的 MAC (需跟 Kotlin 那邊一模一樣)
-      case "D4:22:CD:00:7D:2D": return "LFA"; // 替換這裡
-      case "D4:22:CD:00:7E:FD": return "RFA"; // 替換這裡
-      case "D4:22:CD:00:7E:A6": return "LA";  // 替換這裡
-      case "D4:22:CD:00:7C:AA": return "RA";  // 替換這裡
-      case "D4:22:CD:00:7A:28": return "W";   // 替換這裡
+      case "D4:22:CD:00:7D:2D": return "LFA";
+      case "D4:22:CD:00:7E:FD": return "RFA";
+      case "D4:22:CD:00:7E:A6": return "LA";
+      case "D4:22:CD:00:7C:AA": return "RA";
+      case "D4:22:CD:00:7A:28": return "W";
       default: return "W";
     }
   }
@@ -185,20 +177,12 @@ class _RecordPageState extends State<RecordPage> {
     Future.delayed(const Duration(seconds: 3), () { if (entry.mounted) entry.remove(); });
   }
 
-  void _calibrate() async {
-    showDialog(context: context, barrierDismissible: false, builder: (ctx) => const Center(child: CupertinoActivityIndicator(radius: 20, color: Colors.white)));
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-    Navigator.pop(context);
-    setState(() => _currentState = RecordState.calibrated);
-    _showTopSnackBar('✅ 基準校正完成，可以開始錄製！');
-  }
+  // 💡 2. _calibrate() 函式已經移除
 
   void _startRecording() {
     setState(() {
       _currentState = RecordState.recording;
       _recordingSeconds = 0;
-      // 注意：這裡不用再清空 _recordingBuffer，也不用啟動 aiSampleTimer 了
     });
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -208,11 +192,9 @@ class _RecordPageState extends State<RecordPage> {
 
   void _stopRecording() {
     _recordingTimer?.cancel();
-    // 提醒：別忘了也要去 dispose() 裡面把 _aiSampleTimer?.cancel() 刪掉
 
     setState(() => _currentState = RecordState.completed);
 
-    // 1. 檢查 5 個 Buffer 是否都有收到足夠的資料
     bool hasEnoughData = true;
     int earliestEndTime = 0;
 
@@ -221,8 +203,6 @@ class _RecordPageState extends State<RecordPage> {
         hasEnoughData = false;
         break;
       }
-      // 找出這 5 顆感測器中，「最晚抵達」的那筆時間戳
-      // 我們取最小值，確保這個 T_end 是 5 顆感測器共同擁有的時間點
       int currentLastTs = _rawBuffers[sensor]!.last.timestamp;
       if (earliestEndTime == 0 || currentLastTs < earliestEndTime) {
         earliestEndTime = currentLastTs;
@@ -234,26 +214,21 @@ class _RecordPageState extends State<RecordPage> {
       return;
     }
 
-    // 2. 準備裁切：定義 128Hz 的時間軸
-    double interval = 1000.0 / 128.0; // 7.8125 ms
-    double targetDuration = 256 * interval; // 約 2000 ms
+    double interval = 1000.0 / 128.0;
+    double targetDuration = 256 * interval;
 
-    // 從共同的終點往回推算起點
     double tStart = earliestEndTime - targetDuration;
 
-    // 3. 發動 DataProcessor 引擎，產生完美的 256 幀！
     List<List<double>> perfectWindowData = [];
 
     for (int i = 0; i < 256; i++) {
       double targetT = tStart + (i * interval);
 
-      // 呼叫你的演算法抽出單一幀 (包含 50 軸)
       List<double>? frame = DataProcessor.extractSingleFrame50Axes(_rawBuffers, targetT);
 
       if (frame != null) {
         perfectWindowData.add(frame);
       } else {
-        // 如果算不出 frame，代表你的錄製時間太短，Buffer 裡找不到 targetT 左邊的鄰居
         _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒) 或是嚴重掉包，無法對齊特徵', color: Colors.orange);
         return;
       }
@@ -261,12 +236,10 @@ class _RecordPageState extends State<RecordPage> {
 
     _showTopSnackBar('⏹️ 錄製結束！成功產生 ${perfectWindowData.length} 筆完美對齊資料', color: Colors.blue);
 
-    // 4. 將最完美的資料送進 AI 推論
     try {
       List<double> extractedFeatures = _featureService.extractFeatures(perfectWindowData);
       int predictedActionId = _nativeService.predictRealAction(extractedFeatures);
 
-      // 💡 建立 ID 與動作名稱的對應字典 (Label Map)
       final Map<int, String> actionMap = {
         0:  "無動作 (靜止)",
         1:  "左側前平舉",
@@ -289,10 +262,8 @@ class _RecordPageState extends State<RecordPage> {
         18:  "右側側向肩輪(逆)",
       };
 
-      // 利用字典查詢動作名稱。如果查不到 (例如模型吐出 99)，就顯示 "未知動作 (ID: 99)" 方便除錯
       String actionName = actionMap[predictedActionId] ?? "未知動作 (ID: $predictedActionId)";
 
-      // 顯示最終結果
       _showTopSnackBar('✅ 分析完成！判定動作為：$actionName');
 
     } catch (e) {
@@ -304,7 +275,7 @@ class _RecordPageState extends State<RecordPage> {
 
   void _deleteData() {
     setState(() { _currentState = RecordState.initial; _recordingSeconds = 0; });
-    _showTopSnackBar('🗑️ 資料已刪除，請重新校正', color: Colors.redAccent);
+    _showTopSnackBar('🗑️ 資料已刪除，可以重新錄製', color: Colors.redAccent); // 💡 文字微調
   }
 
   void _showAnalysisDialog() {
@@ -330,8 +301,7 @@ class _RecordPageState extends State<RecordPage> {
 
   String get _statusText {
     switch (_currentState) {
-      case RecordState.initial: return '準備錄製';
-      case RecordState.calibrated: return '已校正，準備就緒';
+      case RecordState.initial: return '準備就緒，請按下開始錄製'; // 💡 3. 更新初始提示
       case RecordState.recording: return '錄製中...';
       case RecordState.completed: return '錄製完成';
     }
@@ -417,9 +387,8 @@ class _RecordPageState extends State<RecordPage> {
 
   Widget _buildControlButtons() {
     switch (_currentState) {
+    // 💡 4. 將 initial 狀態直接顯示「開始錄製」
       case RecordState.initial:
-        return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(onPressed: _calibrate, icon: const Icon(Icons.explore), label: const Text('校正基準')));
-      case RecordState.calibrated:
         return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white), onPressed: _startRecording, icon: const Icon(Icons.play_arrow_rounded), label: const Text('開始錄製')));
       case RecordState.recording:
         return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade500, foregroundColor: Colors.white), onPressed: _stopRecording, icon: const Icon(Icons.stop_rounded), label: const Text('停止錄製')));
@@ -458,19 +427,17 @@ class _RecordPageState extends State<RecordPage> {
             ],
           ),
           const Divider(height: 16),
-          // 💡 [優化] 改用可滾動視窗，避免三個圖表擠在一起
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  // 💡 [優化] 加大圖表高度，讓波形更容易看清楚
                   _buildChartSection('加速度 (m/s²)', 'acc', prefix, -30, 30, height: 120),
                   const SizedBox(height: 16),
                   _buildChartSection('陀螺儀 (deg/s)', 'gyr', prefix, -400, 400, height: 120),
                   const SizedBox(height: 16),
                   _buildChartSection('四元數 (Quaternion)', 'quat', prefix, -1.0, 1.0, height: 140),
-                  const SizedBox(height: 20), // 底部留白
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -486,7 +453,6 @@ class _RecordPageState extends State<RecordPage> {
       children: [
         Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
         const SizedBox(height: 4),
-        // 💡 [優化] 給予固定的高度，而不是讓 Expanded 去擠壓
         Container(
           height: height,
           width: double.infinity,
@@ -496,7 +462,6 @@ class _RecordPageState extends State<RecordPage> {
             child: ValueListenableBuilder<int>(
               valueListenable: _chartTriggers[prefix] ?? ValueNotifier(0),
               builder: (context, _, __) {
-                // 🛡️ [修復] 防呆機制：確保陣列為空時，仍有全 0 的資料可以畫出基準線
                 List<double> fallbackData = List.filled(_maxDataPoints, 0.0);
 
                 return CustomPaint(
@@ -555,7 +520,6 @@ class _RecordPageState extends State<RecordPage> {
   }
 }
 
-// 💡 升級版的畫圖類別，支援 4 條線
 class _MultiLinePainter extends CustomPainter {
   final List<double> xData;
   final List<double> yData;
@@ -577,7 +541,6 @@ class _MultiLinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 🛡️ 防呆：如果畫布寬度或高度無效，提早跳出，避免 NaN 錯誤
     if (size.width <= 0 || size.height <= 0) return;
 
     final gridPaint = Paint()..color = Colors.grey.shade300..strokeWidth = 1;
@@ -588,7 +551,6 @@ class _MultiLinePainter extends CustomPainter {
       double yPos = size.height - ((val - minY) / (maxY - minY)) * size.height;
       if (yPos >= 0 && yPos <= size.height) {
         canvas.drawLine(Offset(0, yPos), Offset(size.width, yPos), gridPaint);
-        // 如果是小數點(如四元數)，保留一位小數；否則轉整數
         String labelText = maxY <= 1.0 ? val.toStringAsFixed(1) : val.toInt().toString();
         textPainter.text = TextSpan(text: labelText, style: TextStyle(color: Colors.grey.shade500, fontSize: 10));
         textPainter.layout();
@@ -597,12 +559,10 @@ class _MultiLinePainter extends CustomPainter {
       }
     }
 
-    // 畫出原本的 X, Y, Z
     _drawLine(canvas, size, xData, Colors.orange);
     _drawLine(canvas, size, yData, Colors.blue);
     _drawLine(canvas, size, zData, Colors.green);
 
-    // 💡 如果有傳入 wData，就多畫一條紫色的線
     if (wData != null && wData!.isNotEmpty) {
       _drawLine(canvas, size, wData!, Colors.purple);
     }
@@ -619,7 +579,6 @@ class _MultiLinePainter extends CustomPainter {
 
     final path = Path();
 
-    // 🛡️ 防呆：避免除以零
     final int dataCount = data.length > maxPoints ? maxPoints : data.length;
     if (dataCount <= 1) return;
 
@@ -633,7 +592,6 @@ class _MultiLinePainter extends CustomPainter {
       if (val.isNaN || val.isInfinite) val = 0.0;
 
       double y = size.height - ((val - minY) / (maxY - minY)) * size.height;
-      // 限制在畫布範圍外一點點，避免超出太多導致繪製異常
       y = y.clamp(-20.0, size.height + 20.0);
 
       if (!hasStarted) {
