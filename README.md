@@ -44,7 +44,7 @@
 6.  **AI 分析**：產生完整角度分析報告並儲存。
 7.  **紀錄追蹤**：於歷史頁面檢視長期康復趨勢。
 
-
+```mermaid
 classDiagram
     %% 定義模組與套件
     namespace Flutter_Frontend {
@@ -195,3 +195,4 @@ classDiagram
     
     ModelLayer1 --> ReportManager : Returns Action Class
     ModelLayer2 --> ReportManager : Returns Repetitions/Angles
+    ```
