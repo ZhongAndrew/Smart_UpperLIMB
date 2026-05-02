@@ -43,3 +43,156 @@
 5.  **動作錄製**：執行檢測動作並即時監控波形。
 6.  **AI 分析**：產生完整角度分析報告並儲存。
 7.  **紀錄追蹤**：於歷史頁面檢視長期康復趨勢。
+
+```
+classDiagram
+    %% 定義模組與套件
+    namespace Flutter_Frontend {
+        class AuthManager
+        class ProfileManager
+        class SensorController
+        class RecordController
+        class HistoryManager
+        class ReportManager
+    }
+
+    namespace Native_C_Plus_Plus {
+        class NativeMLBridge
+        class FeatureExtractor
+        class ModelLayer1
+        class ModelLayer2
+    }
+
+    namespace External_SDK {
+        class MovellaDotSDK
+    }
+
+    namespace Data_Models {
+        class UserProfile
+        class SensorData
+        class AssessmentReport
+    }
+
+    %% 前端邏輯類別
+    class AuthManager {
+        +bool isLoginMode
+        +bool isGuestMode
+        +login(email, password)
+        +guestLogin()
+        +switchMode()
+    }
+
+    class ProfileManager {
+        +saveChanges()
+        +validateForm()
+    }
+
+    class SensorController {
+        +List sensors
+        +bool isSynced
+        +connectSensors()
+        +handleOneKeySync()
+        +disconnect()
+    }
+
+    class RecordController {
+        +RecordState currentState
+        +calibrate()
+        +startRecording()
+        +stopRecording()
+        +exportCSV()
+    }
+
+    class ReportManager {
+        +generateReport()
+        +buildDetailedExerciseCard()
+        +checkInsufficientReps()
+    }
+
+    class HistoryManager {
+        +List historyRecords
+        +filterRecords(year, month)
+        +loadMoreData()
+        +onListScroll()
+    }
+
+    %% 原生橋接與演算法類別
+    class NativeMLBridge {
+        +reset_l1()
+        +run_l1(input)
+        +reset_l2()
+        +run_l2(input)
+    }
+
+    class FeatureExtractor {
+        +FFTImplementation()
+        +calculateMean()
+        +calculateMinOrMax()
+        +calculateAbs()
+        +calculateSum()
+    }
+
+    class ModelLayer1 {
+        +CompactClassificationEnsemble()
+        +CompactClassificationTree()
+        +genc(input)
+    }
+
+    class ModelLayer2 {
+        +genc2(input)
+    }
+
+    %% 外部 SDK
+    class MovellaDotSDK {
+        +setDebugEnabled()
+        +initSDK()
+        +getSensorData()
+    }
+
+    %% 資料實體
+    class UserProfile {
+        +String name
+        +String gender
+        +Date dateOfBirth
+        +double height
+        +double weight
+        +String affectedSide
+        +String medicalHistory
+    }
+
+    class SensorData {
+        +double[] acceleration
+        +double[] gyroscope
+        +long timestamp
+    }
+
+    class AssessmentReport {
+        +Date testDate
+        +Time duration
+        +List leftArmAngles
+        +List rightArmAngles
+        +int repetitions
+        +bool isInsufficient
+    }
+
+    %% 定義關聯性 (Relationships)
+    AuthManager --> UserProfile : Creates
+    ProfileManager --> UserProfile : Manages
+    HistoryManager --> AssessmentReport : Retrieves
+    ReportManager --> AssessmentReport : Generates
+    
+    SensorController --> MovellaDotSDK : Uses
+    SensorController --> SensorData : Collects
+    RecordController --> SensorController : Controls
+    
+    RecordController --> NativeMLBridge : Sends SensorData
+    NativeMLBridge --> FeatureExtractor : Calls
+    NativeMLBridge --> ModelLayer1 : Calls genc()
+    NativeMLBridge --> ModelLayer2 : Calls genc2()
+    
+    FeatureExtractor --> ModelLayer1 : Feeds Features
+    FeatureExtractor --> ModelLayer2 : Feeds Features
+    
+    ModelLayer1 --> ReportManager : Returns Action Class
+    ModelLayer2 --> ReportManager : Returns Repetitions/Angles
+    ```
