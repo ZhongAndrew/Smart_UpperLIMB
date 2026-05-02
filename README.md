@@ -196,5 +196,3 @@ classDiagram
     
     ModelLayer1 --> ReportManager : Returns Action Class
     ModelLayer2 --> ReportManager : Returns Repetitions/Angles
-
-    ```
