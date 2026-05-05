@@ -5,7 +5,7 @@
 // File: FFTImplementationCallback.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 #ifndef FFTIMPLEMENTATIONCALLBACK_H
@@ -23,7 +23,7 @@ namespace internal {
 namespace fft {
 class FFTImplementationCallback {
 public:
-  static void doHalfLengthRadix2(const double x[256], creal_T y[256]);
+  static void doHalfLengthRadix2(const double x[128], creal_T y[128]);
 };
 
 } // namespace fft

@@ -5,7 +5,7 @@
 // File: abs.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 28-Apr-2026 22:23:12
 //
 
 #ifndef ABS_H
@@ -19,7 +19,7 @@
 // Function Declarations
 namespace feature_exraction {
 namespace coder {
-void b_abs(const creal_T x[256], double y[256]);
+void b_abs(const creal_T x[128], double y[128]);
 
 }
 } // namespace feature_exraction
