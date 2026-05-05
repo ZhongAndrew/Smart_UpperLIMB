@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
+import 'package:file_picker/file_picker.dart'; // 💡 匯入檔案選擇器套件
 import '../models/app_models.dart';
 import '../services/native_service.dart';
 import 'package:csv/csv.dart';
 class DashboardPage extends StatefulWidget {
+  final String userId; // 💡 接收目前的 userId，確保分析報告存對人
   final List<Sensor> sensors;
   final bool isSynced;
   final Function(bool) onSyncStatusChanged;
@@ -13,6 +15,7 @@ class DashboardPage extends StatefulWidget {
 
   const DashboardPage({
     super.key,
+    required this.userId,
     required this.sensors,
     required this.isSynced,
     required this.onSyncStatusChanged,
@@ -32,46 +35,35 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isScanning = false;
   int _syncProgress = 0;
   bool _isSyncDialogShowing = false;
-// 💡 [加入這裡]：記錄各個 MAC 位址是否正在連線/斷線中 (轉圈圈狀態)
   final Map<String, bool> _isConnecting = {};
+
   @override
   void initState() {
     super.initState();
     _startListeningToNativeEvents();
   }
 
-  // ----------------------------------------------------------------------
-  // 💡 邏輯層 - 監聽 Android 底層的事件
-  // ----------------------------------------------------------------------
   void _startListeningToNativeEvents() {
     _eventSub = _nativeService.sensorDataStream.listen((data) {
       if (data is! Map) return;
 
       final String eventType = data['event'] ?? "";
 
-      // 🔍 收到掃描結果
       if (eventType == 'DEVICE_FOUND') {
         if (!mounted) return;
         setState(() {
           _nativeService.addDiscoveredMac(data['mac']);
         });
-      }
-
-      // ⏳ 收到硬體同步的進度 (0~100)
-      else if (eventType == 'SYNC_PROGRESS') {
+      } else if (eventType == 'SYNC_PROGRESS') {
         if (!mounted) return;
         setState(() {
           _syncProgress = data['progress'] ?? 0;
         });
-      }
-
-      // ✅ 收到硬體同步完成訊號
-      else if (eventType == 'SYNC_DONE') {
+      } else if (eventType == 'SYNC_DONE') {
         if (!mounted) return;
 
         bool isSuccess = data['isSynced'] ?? false;
 
-        // 關閉轉圈圈對話框
         if (_isSyncDialogShowing) {
           Navigator.of(context).pop();
           _isSyncDialogShowing = false;
@@ -79,7 +71,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
         if (isSuccess) {
           _showTopSnackBar('✅ 所有連線裝置硬體同步完成！', color: const Color(0xFF10B981));
-          widget.onSyncStatusChanged(true); // 開放進入錄製頁面的權限
+          widget.onSyncStatusChanged(true);
         } else {
           _showTopSnackBar('❌ 同步失敗，請確認感測器距離後重試', color: Colors.redAccent);
           widget.onSyncStatusChanged(false);
@@ -96,9 +88,6 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
-  // ----------------------------------------------------------------------
-  // 💡 互動層 - 使用者按鈕操作
-  // ----------------------------------------------------------------------
   Future<void> _toggleScan() async {
     if (_isScanning) {
       await _nativeService.stopScan();
@@ -113,9 +102,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // ----------------------------------------------------------------------
-  // 💡 互動層 - 使用者按鈕操作 (已改為假同步機制)
-  // ----------------------------------------------------------------------
   void _executeHardwareSync() async {
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
 
@@ -131,95 +117,229 @@ class _DashboardPageState extends State<DashboardPage> {
       return;
     }
 
-    // 1. 顯示轉圈圈的進度對話框
     _showSyncProgressDialog();
+    setState(() => _syncProgress = 0);
 
-    // 2. 初始化進度為 0
-    setState(() {
-      _syncProgress = 0;
-    });
-
-    // 3. 設定計時器，每 100 毫秒增加 1% 進度 (100 次 * 100ms = 10 秒)
     Timer.periodic(const Duration(milliseconds: 100), (timer) async {
-      // 若頁面已銷毀或對話框被強制關閉，則停止計時
       if (!mounted || !_isSyncDialogShowing) {
         timer.cancel();
         return;
       }
 
-      setState(() {
-        _syncProgress += 1;
-      });
+      setState(() => _syncProgress += 1);
 
-      // 4. 當進度達到 100% 時，執行放行邏輯
       if (_syncProgress >= 100) {
         timer.cancel();
 
-        // 關閉進度對話框
         if (_isSyncDialogShowing) {
           Navigator.of(context).pop();
           _isSyncDialogShowing = false;
         }
 
-        // 💡 關鍵：雖然是假同步，但必須呼叫底層開始測量，否則錄製頁面會收不到資料
         await _nativeService.startFreeMeasure();
 
-        // 提示使用者並開放進入錄製頁面
         _showTopSnackBar('✅ 模擬同步完成！已開放進入錄製', color: const Color(0xFF10B981));
-        widget.onSyncStatusChanged(true); // 放行權限
-        widget.onStateChanged(); // 更新 UI 狀態
+        widget.onSyncStatusChanged(true);
+        widget.onStateChanged();
       }
     });
   }
-  // 💡 [加入這裡]：處理防呆與延遲連線
+
   Future<void> _toggleSensorConnection(Sensor sensor, bool connect) async {
-    // 1. 防連點：如果這顆感測器已經在連線/斷線中，直接擋掉
     if (_isConnecting[sensor.mac] == true) return;
 
-    // 2. 啟動轉圈圈
-    setState(() {
-      _isConnecting[sensor.mac] = true;
-    });
+    setState(() => _isConnecting[sensor.mac] = true);
 
     try {
       if (connect) {
         _showTopSnackBar('⏳ 正在連線至 ${sensor.name}...');
         await _nativeService.connectToSensor(sensor.mac);
-
-        // 🛑 核心防呆：強制鎖死並轉圈圈 1.5 秒，保護藍牙通道
         await Future.delayed(const Duration(milliseconds: 1500));
-
         setState(() => sensor.isConnected = true);
       } else {
         _showTopSnackBar('⏹️ 正在斷開 ${sensor.name}...', color: Colors.grey);
         await _nativeService.disconnectFromSensor(sensor.mac);
-
-        // 斷線也給予 0.5 秒的緩衝，避免瞬間又被重新點擊
         await Future.delayed(const Duration(milliseconds: 500));
-
         setState(() {
           sensor.isConnected = false;
-          widget.onSyncStatusChanged(false); // 解除同步狀態
+          widget.onSyncStatusChanged(false);
         });
       }
       widget.onStateChanged();
     } catch (e) {
       _showTopSnackBar('❌ 操作失敗: $e', color: Colors.red);
     } finally {
-      // 3. 無論成功或失敗，最後都解除轉圈圈狀態
-      if (mounted) {
-        setState(() {
-          _isConnecting[sensor.mac] = false;
-        });
-      }
+      if (mounted) setState(() => _isConnecting[sensor.mac] = false);
     }
   }
+
+  // ----------------------------------------------------------------------
+  // 💡 匯入 CSV 分析核心邏輯
+  // ----------------------------------------------------------------------
+  Future<void> _pickAndAnalyzeCSV() async {
+    try {
+      // 1. 開啟內建檔案選擇器 (限定選取 csv 檔案)
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+
+      if (result != null) {
+        String fileName = result.files.single.name;
+        // 2. 選取成功後，顯示警語對話框
+        _showAnalysisWarningDialog(fileName);
+      } else {
+        // 使用者手動取消選取
+        _showTopSnackBar('已取消選擇檔案', color: Colors.grey);
+      }
+    } catch (e) {
+      _showTopSnackBar('❌ 讀取檔案失敗: $e', color: Colors.red);
+    }
+  }
+
+  void _showAnalysisWarningDialog(String fileName) {
+    bool isAnalyzing = false; // 控制是否正在顯示轉圈圈
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 分析中不允許點擊背景關閉
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(isAnalyzing ? Icons.auto_awesome : Icons.warning_amber_rounded, color: isAnalyzing ? const Color(0xFF0D9488) : Colors.orange),
+                const SizedBox(width: 8),
+                Text(isAnalyzing ? 'AI 模型分析中' : '匯入分析確認', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: isAnalyzing
+                ? const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: 16),
+                CircularProgressIndicator(color: Color(0xFF0D9488)),
+                SizedBox(height: 24),
+                Text('正在讓機器學習模型萃取特徵...', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('請勿關閉應用程式', style: TextStyle(color: Colors.grey, fontSize: 13)),
+              ],
+            )
+                : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('已選取檔案：\n$fileName\n', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('即將進行動作特徵分析。分析過程會消耗較多運算資源，可能需要幾秒鐘的時間，請保持應用程式開啟。\n', style: TextStyle(fontSize: 14)),
+
+                  // 💡 新增：統一風格的黃底警告標語區塊
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB), // 淺黃色背景
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text('此模型分析的動作為：\n前平舉、側平舉、後平舉、水平外展、水平內收、前向肩輪、側向肩輪，這七種動作。',
+                                  style: TextStyle(color: Colors.orange.shade800, fontSize: 13, height: 1.5)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text('且感測器要配戴五顆，若數據不足則導致分析報告異常或是結果為「無」。',
+                            style: TextStyle(color: Colors.red.shade600, fontSize: 13, height: 1.5)),
+                        const SizedBox(height: 12),
+                        Text('⚠️ 注意：本系統自定義動作次數最小為 3 下，若低於三下，則報告中將以紅字標記警告。',
+                            style: TextStyle(color: Colors.red.shade600, fontSize: 13, height: 1.5, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Text('是否確認開始分析？', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            actions: isAnalyzing
+                ? [] // 正在分析時隱藏按鈕
+                : [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('取消', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () async {
+                  // 1. 切換成正在分析的轉圈圈狀態
+                  setDialogState(() => isAnalyzing = true);
+
+                  // 2. 模擬機器學習模型的分析時間 (等待 3 秒)
+                  await Future.delayed(const Duration(seconds: 3));
+
+                  if (!mounted) return;
+                  Navigator.pop(ctx); // 關閉對話框
+
+                  _showTopSnackBar('✅ CSV 分析完成！', color: const Color(0xFF0D9488));
+
+                  // 3. 產生假資料並跳轉至分析報告頁面
+                  _generateMockCSVReport();
+                },
+                child: const Text('確認並開始分析', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _generateMockCSVReport() {
+    final now = DateTime.now();
+
+    // 💡 產生 7 個動作的分析結果 (未來會替換成真實分析結果)
+    List<ExerciseResult> fullFakeResults = ['前平舉', '側平舉', '後平舉', '水平外展', '水平內收', '前向肩輪', '側向肩輪'].map((exName) {
+      bool isComplex = exName.contains('肩輪');
+      String? direction = isComplex ? '順時針' : null;
+      return ExerciseResult(
+          name: exName,
+          type: isComplex ? 'complex' : 'standard',
+          left: List.generate(1, (i) => RepData(rep: i + 1, dir: direction, start: 0, end: 155, rom: 155)),
+          right: List.generate(1, (i) => RepData(rep: i + 1, dir: direction, start: 0, end: 140, rom: 140))
+      );
+    }).toList();
+
+    AssessmentReport newReport = AssessmentReport(
+      userId: widget.userId, // 💡 使用當前登入者的 ID
+      fullDate: '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}',
+      time: '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
+      totalTime: '01 : 45', // 模擬分析出來的時長
+      results: fullFakeResults,
+    );
+
+    // 呼叫外層，跳轉至分析頁面
+    widget.onAnalysisCompleted(newReport);
+  }
+
   // ----------------------------------------------------------------------
   // 💡 顯示層 - UI 繪製
   // ----------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    // 從 Service 拿持久化的發現名單，確保切換頁面回來卡片還在
     final visibleSensors = widget.sensors
         .where((s) => _nativeService.discoveredMacs.contains(s.mac))
         .toList();
@@ -256,52 +376,82 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildTopActions() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: InkWell(
-            onTap: _toggleScan,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: _isScanning ? Colors.orange.withOpacity(0.1) : Colors.white,
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: _toggleScan,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _isScanning ? Colors.orange : const Color(0xFF3B82F6).withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(_isScanning ? Icons.stop_circle_outlined : Icons.radar_rounded,
-                      color: _isScanning ? Colors.orange : const Color(0xFF3B82F6), size: 20),
-                  const SizedBox(width: 8),
-                  Text(_isScanning ? '停止掃描' : '掃描裝置',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: _isScanning ? Colors.orange : const Color(0xFF3B82F6), fontSize: 14)),
-                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: _isScanning ? Colors.orange.withOpacity(0.1) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _isScanning ? Colors.orange : const Color(0xFF3B82F6).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_isScanning ? Icons.stop_circle_outlined : Icons.radar_rounded,
+                          color: _isScanning ? Colors.orange : const Color(0xFF3B82F6), size: 20),
+                      const SizedBox(width: 8),
+                      Text(_isScanning ? '停止掃描' : '掃描裝置',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: _isScanning ? Colors.orange : const Color(0xFF3B82F6), fontSize: 14)),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: InkWell(
+                onTap: _executeHardwareSync,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: widget.isSynced ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(widget.isSynced ? Icons.check_circle : Icons.sync_rounded,
+                          color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488), size: 20),
+                      const SizedBox(width: 8),
+                      Text(widget.isSynced ? '解除同步' : '執行同步',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488), fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
+        const SizedBox(height: 12),
+        // 💡 匯入 CSV 分析按鈕
+        SizedBox(
+          width: double.infinity,
           child: InkWell(
-            onTap: _executeHardwareSync,
+            onTap: _pickAndAnalyzeCSV,
             borderRadius: BorderRadius.circular(16),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: widget.isSynced ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white,
+                color: Colors.purple.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488).withOpacity(0.3)),
+                border: Border.all(color: Colors.purple.withOpacity(0.3)),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(widget.isSynced ? Icons.check_circle : Icons.sync_rounded,
-                      color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488), size: 20),
-                  const SizedBox(width: 8),
-                  Text(widget.isSynced ? '解除同步' : '執行同步',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488), fontSize: 14)),
+                  Icon(Icons.drive_folder_upload_rounded, color: Colors.purple, size: 20),
+                  SizedBox(width: 8),
+                  Text('匯入本機 CSV 進行分析',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 14)),
                 ],
               ),
             ),
@@ -356,20 +506,17 @@ class _DashboardPageState extends State<DashboardPage> {
             const Icon(Icons.flash_on_rounded, size: 16, color: Colors.green),
           const SizedBox(width: 8),
 
-          // 💡 判斷是否正在處理中
           if (_isConnecting[sensor.mac] == true)
-          // 正在連線/斷線中 -> 顯示轉圈圈
             const Padding(
               padding: EdgeInsets.only(right: 8.0, left: 8.0),
               child: CupertinoActivityIndicator(radius: 12, color: Color(0xFF0D9488)),
             )
           else
-          // 平常狀態 -> 顯示開關
             CupertinoSwitch(
               value: isConnected,
               activeColor: const Color(0xFF0D9488),
               onChanged: (val) => _toggleSensorConnection(sensor, val),
-            ), // ✅ 這裡結束後，直接接外層的 list 結尾
+            ),
         ],
       ),
     );
@@ -377,21 +524,23 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40),
+      // 💡 關鍵修改：將原本的 vertical: 40 改成特別指定 top: 120，把它往下推到畫面中間
+      padding: const EdgeInsets.only(top: 120, bottom: 40),
+      alignment: Alignment.center,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bluetooth_searching, size: 48, color: Colors.grey.shade200),
-          const SizedBox(height: 12),
-          const Text('尚未發現任何設備', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-          const Text('請點擊上方「掃描裝置」開始搜尋', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          // 💡 視覺優化：稍微放大 Icon 並調整顏色，讓它在中間更有存在感
+          Icon(Icons.bluetooth_searching, size: 64, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          const Text('尚未發現任何設備', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 6),
+          const Text('請點擊上方「掃描裝置」開始搜尋', style: TextStyle(color: Colors.grey, fontSize: 13)),
         ],
       ),
     );
   }
 
-  // ----------------------------------------------------------------------
-  // 🎨 彈出對話框與膠囊提示
-  // ----------------------------------------------------------------------
   void _showSyncProgressDialog() {
     _isSyncDialogShowing = true;
     _syncProgress = 0;

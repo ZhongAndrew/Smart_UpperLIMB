@@ -1,3 +1,5 @@
+import 'dart:convert'; // 💡 給 utf8.encode 使用
+import 'package:crypto/crypto.dart'; // 💡 給 sha256 使用
 import 'package:flutter/foundation.dart'; // 💡 匯入 foundation 以使用 debugPrint
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -8,6 +10,16 @@ class DatabaseHelper {
   static Database? _database;
 
   DatabaseHelper._init();
+
+  // 💡 [新增] 密碼 Hash 加密工具 (使用 SHA-256)
+  static String hashPassword(String password) {
+    // 1. 將字串轉成位元組
+    final bytes = utf8.encode(password);
+    // 2. 使用 SHA-256 演算法進行雜湊加密
+    final digest = sha256.convert(bytes);
+    // 3. 回傳加密後的字串 (會是一串 64 字元的英數亂碼)
+    return digest.toString();
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -83,12 +95,17 @@ class DatabaseHelper {
 
   /// 登入驗證
   /// 成功回傳 UserProfile 物件，失敗回傳 null
+  /// 登入驗證 (已升級 Hash 加密版)
   Future<UserProfile?> loginUser(String email, String password) async {
     final db = await instance.database;
+
+    // 💡 關鍵：先把使用者輸入的明文密碼，轉換成 Hash 亂碼
+    String hashedPassword = hashPassword(password);
+
     final maps = await db.query(
       'users',
       where: 'email = ? AND password = ?',
-      whereArgs: [email, password],
+      whereArgs: [email, hashedPassword], // 👈 用加密後的亂碼去資料庫找
     );
 
     if (maps.isNotEmpty) {

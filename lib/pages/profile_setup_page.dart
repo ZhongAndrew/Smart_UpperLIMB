@@ -84,9 +84,10 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
     // 2. 建立 UserProfile 物件，並產生 UUID！
     UserProfile newUser = UserProfile(
-      id: const Uuid().v4(), // 自動生成唯一 ID
+      id: const Uuid().v4(),
       email: widget.email,
-      password: widget.password,
+      // 💡 重點修改：在存入模型之前，先將密碼進行 Hash 加密！
+      password: DatabaseHelper.hashPassword(widget.password),
       lastName: _lastNameController.text.trim(),
       firstName: _firstNameController.text.trim(),
       gender: _selectedGender!,

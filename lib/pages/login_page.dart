@@ -1,3 +1,4 @@
+import 'forgot_password_page.dart';
 import 'package:flutter/material.dart';
 import 'main_system.dart';
 import 'profile_setup_page.dart';
@@ -142,11 +143,11 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
+//陳 大狀 手痛
   void _fillTestAccount() {
     setState(() {
-      _accountController.text = 'doctor2@example.com';
-      _passwordController.text = '123456bB';
+      _accountController.text = 'doctor3@example.com';
+      _passwordController.text = '123456cC';
     });
     _showTopSnackBar('已帶入測試帳號！如果是第一次使用，請先切換至註冊');
   }
@@ -247,6 +248,23 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ],
+
+                        // 👇 加入這段忘記密碼按鈕 👇
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                              );
+                            },
+                            child: const Text(
+                              '忘記密碼？',
+                              style: TextStyle(color: Color(0xFF0D9488), fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
 
                         if (isLoginMode)
                           Align(

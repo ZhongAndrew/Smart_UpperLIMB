@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'dart:math' as math;
 import '../models/app_models.dart';
 import '../widgets/rom_bar_chart.dart';
-import '../services/db_helper.dart'; // 💡 匯入資料庫管家
+import '../services/db_helper.dart';
 
 class HistoryPage extends StatefulWidget {
   final String userId;
@@ -37,8 +38,10 @@ class _HistoryPageState extends State<HistoryPage> {
 
   final ScrollController _chartScrollController = ScrollController();
   final ScrollController _listScrollController = ScrollController();
+
   bool _isLoadingMore = false;
   bool _showBackToTopButton = false;
+  bool _hasMoreData = true;
 
   final List<String> _targetExercises = [
     '前平舉', '側平舉', '後平舉',
@@ -67,6 +70,7 @@ class _HistoryPageState extends State<HistoryPage> {
         setState(() {
           _localHistoryRecords = records;
           _isLoadingDatabase = false;
+          _hasMoreData = records.length >= 10;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
       }
@@ -147,7 +151,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
   void _onListScroll() {
     if (_listScrollController.position.pixels >= _listScrollController.position.maxScrollExtent - 20) {
-      if (!_isLoadingMore) {
+      if (!_isLoadingMore && _hasMoreData) {
         _loadMoreData();
       }
     }
@@ -173,10 +177,20 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Future<void> _loadMoreData() async {
     setState(() => _isLoadingMore = true);
+
+    _showTopSnackBar('⏳ 正在為您加載更舊的歷史紀錄...', color: Colors.blueAccent);
+
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
-    setState(() => _isLoadingMore = false);
-    _showTopSnackBar('✅ 已從資料庫載入更舊的歷史紀錄！');
+
+    setState(() {
+      _isLoadingMore = false;
+      _hasMoreData = false;
+    });
+
+    if (!_hasMoreData) {
+      _showTopSnackBar('✅ 已滑到最底，沒有更舊的紀錄囉！', color: Colors.orange);
+    }
   }
 
   void _scrollToLatest() {
@@ -284,172 +298,189 @@ class _HistoryPageState extends State<HistoryPage> {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
+
                   if (index == displayRecords.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: CupertinoActivityIndicator(radius: 16, color: Color(0xFF0D9488)),
-                      ),
-                    );
+                    if (_isLoadingMore) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CupertinoActivityIndicator(radius: 12, color: Color(0xFF0D9488)),
+                                SizedBox(width: 8),
+                                Text('載入舊資料中...', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                              ],
+                            )
+                        ),
+                      );
+                    } else if (!_hasMoreData) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text('— 沒有更多歷史紀錄了 —', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        ),
+                      );
+                    } else {
+                      return const SizedBox(height: 80);
+                    }
                   }
 
                   final report = displayRecords[index];
 
-                  // 💡 重點更新：在原本的卡片外面包上一層 Dismissible (左滑刪除元件)
-                  return Dismissible(
-                    // 必須給定一個唯一的 Key，這裡用 日期+時間+index 來確保唯一性
-                    key: Key('${report.fullDate}_${report.time}_$index'),
-                    // 設定只能從右往左滑動 (End To Start)
-                    direction: DismissDirection.endToStart,
-                    // 滑動時露出的紅色背景與垃圾桶圖示
-                    background: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade400,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
-                    ),
-                    // 滑動到底放開時，會先跳出對話框讓使用者確認
-                    confirmDismiss: (direction) async {
-                      return await showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Row(
-                              children: [
-                                Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-                                SizedBox(width: 8),
-                                Text('確認刪除', style: TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            content: const Text('確定要刪除這筆歷史紀錄嗎？\n刪除後將無法恢復。'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(false), // 回傳 false 代表取消刪除
-                                child: const Text('取消', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red.shade400,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
-                                ),
-                                onPressed: () => Navigator.of(context).pop(true), // 回傳 true 代表確認刪除
-                                child: const Text('刪除', style: TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                    // 當確認刪除後 (對話框回傳 true) 執行的動作
-                    onDismissed: (direction) async {
-                      // 1. 先從畫面陣列中移除這筆資料
-                      setState(() {
-                        _localHistoryRecords.remove(report);
-                      });
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Slidable(
+                      key: Key('${report.fullDate}_${report.time}_$index'),
+                      endActionPane: ActionPane(
+                        motion: const ScrollMotion(),
+                        extentRatio: 0.22,
+                        children: [
+                          CustomSlidableAction(
+                            // 💡 關鍵 1：設定 autoClose 為 false，點擊時不要自動收回去！
+                            autoClose: false,
+                            onPressed: (actionContext) async {
+                              bool? confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    title: const Row(
+                                      children: [
+                                        Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                                        SizedBox(width: 8),
+                                        Text('確認刪除', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                    content: const Text('確定要刪除這筆歷史紀錄嗎？\n刪除後將無法恢復。'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(false),
+                                        child: const Text('取消', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red.shade600,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                                        ),
+                                        onPressed: () => Navigator.of(context).pop(true),
+                                        child: const Text('刪除', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
 
-                      // 2. 真實從 SQLite 資料庫中刪除
-                      // 因為我們目前的 Dart Model 裡面沒有存 ID，
-                      // 所以我們透過比對 userId、日期(fullDate) 和 時間(time) 來精準找出並刪除那筆紀錄
-                      try {
-                        final db = await DatabaseHelper.instance.database;
-                        await db.delete(
-                          'reports',
-                          where: 'userId = ? AND fullDate = ? AND time = ?',
-                          whereArgs: [widget.userId, report.fullDate, report.time],
-                        );
-                        _showTopSnackBar('🗑️ 已成功刪除該筆紀錄', color: Colors.redAccent);
-                      } catch (e) {
-                        _showTopSnackBar('⚠️ 刪除時發生異常', color: Colors.orange);
-                      }
-                    },
-                    // 這邊包裹原本的整塊紀錄卡片 UI
-                    child: GestureDetector(
-                      onTap: () => _navigateToDetail(report),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${widget.userName}的復健紀錄',
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                              if (confirm == true) {
+                                // 確認刪除：直接移除資料
+                                setState(() {
+                                  _localHistoryRecords.remove(report);
+                                });
+                                try {
+                                  final db = await DatabaseHelper.instance.database;
+                                  await db.delete(
+                                    'reports',
+                                    where: 'userId = ? AND fullDate = ? AND time = ?',
+                                    whereArgs: [widget.userId, report.fullDate, report.time],
+                                  );
+                                  _showTopSnackBar('🗑️ 已成功刪除該筆紀錄', color: Colors.redAccent);
+                                } catch (e) {
+                                  _showTopSnackBar('⚠️ 刪除時發生異常', color: Colors.orange);
+                                }
+                              } else {
+                                // 💡 關鍵 2：如果使用者點擊「取消」，我們再手動叫 Slidable 收回去！
+                                Slidable.of(actionContext)?.close();
+                              }
+                            },
+                            backgroundColor: Colors.red.shade600,
+                            foregroundColor: Colors.white,
+                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
+                            child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
+                          ),
+                        ],
+                      ),
+                      child: GestureDetector(
+                        onTap: () => _navigateToDetail(report),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${widget.userName}的復健紀錄',
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(color: const Color(0xFF0D9488).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                                  child: const Text('已紀錄', style: TextStyle(fontSize: 12, color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
-                                const SizedBox(width: 6),
-                                Text(report.fullDate, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                                const SizedBox(width: 16),
-                                const Icon(Icons.access_time_outlined, size: 16, color: Colors.grey),
-                                const SizedBox(width: 6),
-                                Text(report.time.isNotEmpty ? report.time : '14:30', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                              ],
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Divider(height: 1, color: Colors.black12),
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('總耗時', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                      const SizedBox(height: 4),
-                                      Text(report.totalTime, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                                    ],
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(color: const Color(0xFF0D9488).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                                    child: const Text('已紀錄', style: TextStyle(fontSize: 12, color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
                                   ),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('紀錄項目', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                      const SizedBox(height: 4),
-                                      Text('${report.results.length}項動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                                    ],
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
+                                  const SizedBox(width: 6),
+                                  Text(report.fullDate, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                  const SizedBox(width: 16),
+                                  const Icon(Icons.access_time_outlined, size: 16, color: Colors.grey),
+                                  const SizedBox(width: 6),
+                                  Text(report.time.isNotEmpty ? report.time : '14:30', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                ],
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Divider(height: 1, color: Colors.black12),
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('總耗時', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                        const SizedBox(height: 4),
+                                        Text(report.totalTime, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.grey.shade400),
-                              ],
-                            )
-                          ],
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('紀錄項目', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                        const SizedBox(height: 4),
+                                        Text('${report.results.length}項動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.grey.shade400),
+                                ],
+                              )
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   );
                 },
-                childCount: displayRecords.length + (_isLoadingMore ? 1 : 0),
+                childCount: displayRecords.length + 1,
               ),
             ),
           ),
@@ -743,9 +774,6 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 }
 
-// =========================================================================
-// 圖表繪製與資料模型
-// =========================================================================
 class ChartDataPoint {
   final String label;
   final double? leftAvg;
@@ -866,9 +894,6 @@ class _TrendPainter extends CustomPainter {
   bool shouldRepaint(covariant _TrendPainter oldDelegate) => oldDelegate.touchedIndex != touchedIndex;
 }
 
-// =========================================================================
-// 獨立頁面：點擊紀錄後展開的詳細數據頁面
-// =========================================================================
 class _ReportDetailScreen extends StatelessWidget {
   final AssessmentReport report;
   const _ReportDetailScreen({required this.report});

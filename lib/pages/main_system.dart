@@ -139,6 +139,7 @@ class _MainSystemState extends State<MainSystem> {
   Widget build(BuildContext context) {
     final List<Widget> pagesList = [
       DashboardPage(
+        userId: widget.userId, // 💡 加入這行！把登入者的 ID 傳進去
         sensors: _sensors,
         isSynced: _isSynced,
         onSyncStatusChanged: _handleSyncStatusChanged,
