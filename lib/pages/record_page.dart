@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import '../models/app_models.dart';
 
 import '../services/native_service.dart';
 import '../services/feature_service.dart';
 import '../services/data_processor.dart';
+import '../services/db_helper.dart'; // 保留：方便未來做額外的資料庫測試
 
-// 💡 1. 移除 calibrated 狀態
 enum RecordState { initial, recording, completed }
 
 class RecordPage extends StatefulWidget {
+  final String userId;
   final List<Sensor> sensors;
   final bool isSynced;
   final Function(int) onSwitchTab;
@@ -18,6 +18,7 @@ class RecordPage extends StatefulWidget {
 
   const RecordPage({
     super.key,
+    required this.userId,
     required this.sensors,
     required this.isSynced,
     required this.onSwitchTab,
@@ -31,11 +32,7 @@ class RecordPage extends StatefulWidget {
 class _RecordPageState extends State<RecordPage> {
 
   final Map<String, List<RawSensorPoint>> _rawBuffers = {
-    "LFA": [],
-    "RFA": [],
-    "LA": [],
-    "RA": [],
-    "W": [],
+    "LFA": [], "RFA": [], "LA": [], "RA": [], "W": [],
   };
 
   final int _maxBufferSize = 300;
@@ -45,7 +42,6 @@ class _RecordPageState extends State<RecordPage> {
   final FeatureService _featureService = FeatureService();
 
   StreamSubscription<dynamic>? _sensorSub;
-  List<List<double>> _recordingBuffer = [];
 
   int _currentSensorIndex = 0;
   RecordState _currentState = RecordState.initial;
@@ -55,8 +51,6 @@ class _RecordPageState extends State<RecordPage> {
   Timer? _aiSampleTimer;
 
   final List<String> orderedSensors = ["LFA", "RFA", "LA", "RA", "W"];
-
-  final Map<String, double> _latestSensorData = {};
 
   final int _maxDataPoints = 100;
 
@@ -161,7 +155,11 @@ class _RecordPageState extends State<RecordPage> {
           color: Colors.transparent,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))]),
+            decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))]
+            ),
             child: Row(
               children: [
                 const Icon(Icons.info_outline, color: Colors.white, size: 20),
@@ -176,8 +174,6 @@ class _RecordPageState extends State<RecordPage> {
     overlay.insert(entry);
     Future.delayed(const Duration(seconds: 3), () { if (entry.mounted) entry.remove(); });
   }
-
-  // 💡 2. _calibrate() 函式已經移除
 
   void _startRecording() {
     setState(() {
@@ -275,33 +271,45 @@ class _RecordPageState extends State<RecordPage> {
 
   void _deleteData() {
     setState(() { _currentState = RecordState.initial; _recordingSeconds = 0; });
-    _showTopSnackBar('🗑️ 資料已刪除，可以重新錄製', color: Colors.redAccent); // 💡 文字微調
+    _showTopSnackBar('🗑️ 資料已刪除，可以重新錄製', color: Colors.redAccent);
   }
 
   void _showAnalysisDialog() {
     final now = DateTime.now();
-    List<ExerciseResult> fullFakeResults = ['前平舉', '側平舉', '後平舉'].map((exName) {
+
+    // 💡 升級：為「肩輪」動作精準加入「順時針/逆時針」與「complex」類型！
+    List<ExerciseResult> fullFakeResults = ['前平舉', '側平舉', '後平舉', '水平外展', '水平內收', '前向肩輪', '側向肩輪'].map((exName) {
+
+      bool isComplex = exName.contains('肩輪'); // 判斷是否為肩輪動作
+      String? direction = isComplex ? '順時針' : null; // 如果是肩輪，給予順時針方向
+
       return ExerciseResult(
-          name: exName, type: 'standard',
-          left: List.generate(3, (i) => RepData(rep: i + 1, start: 0, end: 155, rom: 155)),
-          right: List.generate(3, (i) => RepData(rep: i + 1, start: 0, end: 140, rom: 140))
+          name: exName,
+          type: isComplex ? 'complex' : 'standard', // 動態設定類型
+          left: List.generate(1, (i) => RepData(rep: i + 1, dir: direction, start: 0, end: 155, rom: 155)),
+          right: List.generate(1, (i) => RepData(rep: i + 1, dir: direction, start: 0, end: 140, rom: 140))
       );
     }).toList();
 
-    widget.onAnalysisCompleted(AssessmentReport(
-      fullDate: '${now.year}/${now.month}/${now.day}',
-      time: '${now.hour}:${now.minute}',
-      totalTime: _formattedTime,
+    // 💡 判斷是否為無設備測試：如果沒有真正錄製，給一個假的總時長
+    String finalTotalTime = _recordingSeconds > 0 ? _formattedTime : '03 : 15';
+
+    AssessmentReport newReport = AssessmentReport(
+      userId: widget.userId,
+      fullDate: '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}',
+      time: '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
+      totalTime: finalTotalTime,
       results: fullFakeResults,
-    ));
-    _showTopSnackBar('📊 分析完成！');
+    );
+
+    widget.onAnalysisCompleted(newReport);
   }
 
   String get _formattedTime => '${(_recordingSeconds ~/ 60).toString().padLeft(2, '0')} : ${(_recordingSeconds % 60).toString().padLeft(2, '0')}';
 
   String get _statusText {
     switch (_currentState) {
-      case RecordState.initial: return '準備就緒，請按下開始錄製'; // 💡 3. 更新初始提示
+      case RecordState.initial: return '準備就緒，請按下開始錄製';
       case RecordState.recording: return '錄製中...';
       case RecordState.completed: return '錄製完成';
     }
@@ -311,7 +319,10 @@ class _RecordPageState extends State<RecordPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isSynced) {
+    int connectedCount = widget.sensors.where((s) => s.isConnected).length;
+
+    // 💡 修改：找不到設備或未連線時的畫面 (加入免設備測試按鈕)
+    if (!widget.isSynced || connectedCount == 0) {
       return Container(
         color: const Color(0xFFF8FAFC),
         width: double.infinity,
@@ -327,14 +338,26 @@ class _RecordPageState extends State<RecordPage> {
               icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               label: const Text('前往設備連線', style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488)),
-            )
+            ),
+
+            const SizedBox(height: 48),
+            const Divider(indent: 80, endIndent: 80),
+            const SizedBox(height: 16),
+
+            // 💡 開發者福利：跳過設備，直接測試功能
+            OutlinedButton.icon(
+              onPressed: _showAnalysisDialog,
+              icon: const Icon(Icons.bug_report_outlined, color: Colors.orange),
+              label: const Text('開發測試：跳過錄製，直接產生報告', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.orange),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ],
         ),
       );
     }
-
-    int connectedCount = widget.sensors.where((s) => s.isConnected).length;
-    if (connectedCount == 0) return const Center(child: Text("未連線任何感測器"));
 
     return Container(
       color: const Color(0xFFF8FAFC),
@@ -387,7 +410,6 @@ class _RecordPageState extends State<RecordPage> {
 
   Widget _buildControlButtons() {
     switch (_currentState) {
-    // 💡 4. 將 initial 狀態直接顯示「開始錄製」
       case RecordState.initial:
         return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white), onPressed: _startRecording, icon: const Icon(Icons.play_arrow_rounded), label: const Text('開始錄製')));
       case RecordState.recording:
@@ -413,7 +435,11 @@ class _RecordPageState extends State<RecordPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))]
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

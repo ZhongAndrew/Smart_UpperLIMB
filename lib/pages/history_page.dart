@@ -4,14 +4,17 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../models/app_models.dart';
 import '../widgets/rom_bar_chart.dart';
+import '../services/db_helper.dart'; // 💡 匯入資料庫管家
 
 class HistoryPage extends StatefulWidget {
+  final String userId;
   final bool isGuest;
   final List<AssessmentReport> historyRecords;
   final String userName;
 
   const HistoryPage({
     super.key,
+    required this.userId,
     required this.isGuest,
     required this.historyRecords,
     required this.userName,
@@ -22,6 +25,9 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
+  List<AssessmentReport> _localHistoryRecords = [];
+  bool _isLoadingDatabase = true;
+
   String _selectedExercise = '前平舉';
 
   final TextEditingController _yearController = TextEditingController();
@@ -30,10 +36,9 @@ class _HistoryPageState extends State<HistoryPage> {
   int? _touchedIndex;
 
   final ScrollController _chartScrollController = ScrollController();
-  // 💡 現在這個滑動控制器將掌控全頁面！
   final ScrollController _listScrollController = ScrollController();
   bool _isLoadingMore = false;
-  bool _showBackToTopButton = false; // 💡 新增：控制「回到頂部」按鈕是否顯示
+  bool _showBackToTopButton = false;
 
   final List<String> _targetExercises = [
     '前平舉', '側平舉', '後平舉',
@@ -44,15 +49,42 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
     _listScrollController.addListener(_onListScroll);
+
+    if (!widget.isGuest) {
+      _loadRecordsFromDatabase();
+    } else {
+      _isLoadingDatabase = false;
+    }
+  }
+
+  Future<void> _loadRecordsFromDatabase() async {
+    setState(() => _isLoadingDatabase = true);
+
+    try {
+      final records = await DatabaseHelper.instance.getReportsByUserId(widget.userId);
+      if (mounted) {
+        setState(() {
+          _localHistoryRecords = records;
+          _isLoadingDatabase = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingDatabase = false);
+        _showTopSnackBar('❌ 讀取資料庫失敗', color: Colors.red);
+      }
+    }
   }
 
   @override
   void didUpdateWidget(HistoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.historyRecords.length != widget.historyRecords.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
+    if (oldWidget.userId != widget.userId) {
+      _loadRecordsFromDatabase();
+    } else if (oldWidget.historyRecords.length != widget.historyRecords.length) {
+      _loadRecordsFromDatabase();
     }
   }
 
@@ -120,7 +152,6 @@ class _HistoryPageState extends State<HistoryPage> {
       }
     }
 
-    // 💡 新增：當往下滑動超過 400 像素時，顯示「回到頂部」按鈕
     if (_listScrollController.offset >= 400) {
       if (!_showBackToTopButton) {
         setState(() => _showBackToTopButton = true);
@@ -132,7 +163,6 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
-  // 💡 新增：平滑滾動到最頂端的函式
   void _scrollToTop() {
     _listScrollController.animateTo(
       0,
@@ -163,7 +193,7 @@ class _HistoryPageState extends State<HistoryPage> {
     String yearText = _yearController.text.trim();
     String monthText = _monthController.text.trim();
 
-    return widget.historyRecords.where((r) {
+    return _localHistoryRecords.where((r) {
       bool matchYear = yearText.isEmpty || r.fullDate.startsWith(yearText);
       bool matchMonth = monthText.isEmpty || (r.fullDate.length >= 7 && r.fullDate.substring(5, 7) == monthText.padLeft(2, '0'));
       return matchYear && matchMonth;
@@ -176,17 +206,25 @@ class _HistoryPageState extends State<HistoryPage> {
       return _buildGuestWarningView();
     }
 
-    if (widget.historyRecords.isEmpty) {
-      return const Center(child: Text('目前沒有任何歷史紀錄', style: TextStyle(color: Colors.grey)));
+    if (_isLoadingDatabase) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8FAFC),
+        body: Center(child: CupertinoActivityIndicator(radius: 20, color: Color(0xFF0D9488))),
+      );
     }
 
-    // 將篩選好的資料在畫面前先算好
+    if (_localHistoryRecords.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8FAFC),
+        body: Center(child: Text('目前沒有任何歷史紀錄，快去錄製一筆吧！', style: TextStyle(color: Colors.grey))),
+      );
+    }
+
     List<AssessmentReport> displayRecords = _filteredRecords;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       resizeToAvoidBottomInset: false,
-      // 💡 新增：加入右下角懸浮的「回到頂部」按鈕
       floatingActionButton: _showBackToTopButton
           ? FloatingActionButton(
         onPressed: _scrollToTop,
@@ -195,13 +233,10 @@ class _HistoryPageState extends State<HistoryPage> {
         child: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
       )
           : null,
-      // 🏆 終極排版重構：全面改用 CustomScrollView + Sliver
-      // 這樣可以拔除所有 Expanded 產生的強制高度限制，完美相容任何螢幕擠壓！
       body: CustomScrollView(
-        controller: _listScrollController, // 統一的滑動控制器
+        controller: _listScrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // 區塊 1：上方標題列
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 8),
@@ -224,7 +259,6 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
 
-          // 區塊 2：趨勢圖表
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -232,7 +266,6 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
 
-          // 區塊 3：詳細紀錄的標題與日曆按鈕
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 20.0, bottom: 8.0),
@@ -246,13 +279,11 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
 
-          // 區塊 4：紀錄列表清單 (SliverList 會自動根據內容長出高度)
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                  // 如果滑到最後一筆，就顯示載入中的動畫
                   if (index == displayRecords.length) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
@@ -263,81 +294,157 @@ class _HistoryPageState extends State<HistoryPage> {
                   }
 
                   final report = displayRecords[index];
-                  return GestureDetector(
-                    onTap: () => _navigateToDetail(report),
-                    child: Container(
+
+                  // 💡 重點更新：在原本的卡片外面包上一層 Dismissible (左滑刪除元件)
+                  return Dismissible(
+                    // 必須給定一個唯一的 Key，這裡用 日期+時間+index 來確保唯一性
+                    key: Key('${report.fullDate}_${report.time}_$index'),
+                    // 設定只能從右往左滑動 (End To Start)
+                    direction: DismissDirection.endToStart,
+                    // 滑動時露出的紅色背景與垃圾桶圖示
+                    background: Container(
                       margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.red.shade400,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
-                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${widget.userName}的復健紀錄',
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
+                    ),
+                    // 滑動到底放開時，會先跳出對話框讓使用者確認
+                    confirmDismiss: (direction) async {
+                      return await showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                                SizedBox(width: 8),
+                                Text('確認刪除', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            content: const Text('確定要刪除這筆歷史紀錄嗎？\n刪除後將無法恢復。'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false), // 回傳 false 代表取消刪除
+                                child: const Text('取消', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(color: const Color(0xFF0D9488).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                                child: const Text('已紀錄', style: TextStyle(fontSize: 12, color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red.shade400,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                                ),
+                                onPressed: () => Navigator.of(context).pop(true), // 回傳 true 代表確認刪除
+                                child: const Text('刪除', style: TextStyle(fontWeight: FontWeight.bold)),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
-                              const SizedBox(width: 6),
-                              Text(report.fullDate, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                              const SizedBox(width: 16),
-                              const Icon(Icons.access_time_outlined, size: 16, color: Colors.grey),
-                              const SizedBox(width: 6),
-                              Text(report.time.isNotEmpty ? report.time : '14:30', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Divider(height: 1, color: Colors.black12),
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('總耗時', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                    const SizedBox(height: 4),
-                                    Text(report.totalTime, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                                  ],
+                          );
+                        },
+                      );
+                    },
+                    // 當確認刪除後 (對話框回傳 true) 執行的動作
+                    onDismissed: (direction) async {
+                      // 1. 先從畫面陣列中移除這筆資料
+                      setState(() {
+                        _localHistoryRecords.remove(report);
+                      });
+
+                      // 2. 真實從 SQLite 資料庫中刪除
+                      // 因為我們目前的 Dart Model 裡面沒有存 ID，
+                      // 所以我們透過比對 userId、日期(fullDate) 和 時間(time) 來精準找出並刪除那筆紀錄
+                      try {
+                        final db = await DatabaseHelper.instance.database;
+                        await db.delete(
+                          'reports',
+                          where: 'userId = ? AND fullDate = ? AND time = ?',
+                          whereArgs: [widget.userId, report.fullDate, report.time],
+                        );
+                        _showTopSnackBar('🗑️ 已成功刪除該筆紀錄', color: Colors.redAccent);
+                      } catch (e) {
+                        _showTopSnackBar('⚠️ 刪除時發生異常', color: Colors.orange);
+                      }
+                    },
+                    // 這邊包裹原本的整塊紀錄卡片 UI
+                    child: GestureDetector(
+                      onTap: () => _navigateToDetail(report),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${widget.userName}的復健紀錄',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('紀錄項目', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                    const SizedBox(height: 4),
-                                    Text('${report.results.length}項動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                                  ],
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(color: const Color(0xFF0D9488).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                                  child: const Text('已紀錄', style: TextStyle(fontSize: 12, color: Color(0xFF0D9488), fontWeight: FontWeight.bold)),
                                 ),
-                              ),
-                              Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.grey.shade400),
-                            ],
-                          )
-                        ],
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
+                                const SizedBox(width: 6),
+                                Text(report.fullDate, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                const SizedBox(width: 16),
+                                const Icon(Icons.access_time_outlined, size: 16, color: Colors.grey),
+                                const SizedBox(width: 6),
+                                Text(report.time.isNotEmpty ? report.time : '14:30', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                              ],
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Divider(height: 1, color: Colors.black12),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('總耗時', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                      const SizedBox(height: 4),
+                                      Text(report.totalTime, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('紀錄項目', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                      const SizedBox(height: 4),
+                                      Text('${report.results.length}項動作', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.grey.shade400),
+                              ],
+                            )
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -352,7 +459,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Widget _buildTrendSection() {
-    List<AssessmentReport> chronologicalRecords = widget.historyRecords.reversed.toList();
+    List<AssessmentReport> chronologicalRecords = _localHistoryRecords.reversed.toList();
 
     List<ChartDataPoint> chartData = chronologicalRecords.map((r) {
       ExerciseResult? res;
@@ -521,7 +628,7 @@ class _HistoryPageState extends State<HistoryPage> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          scrollable: true, // 保險機制
+          scrollable: true,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('查詢歷史紀錄', style: TextStyle(fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(

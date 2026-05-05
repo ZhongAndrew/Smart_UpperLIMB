@@ -7,15 +7,18 @@ import 'record_page.dart';
 import 'analysis_page.dart';
 import 'history_page.dart';
 import 'user_profile_page.dart';
+import '../services/db_helper.dart';
 
 class MainSystem extends StatefulWidget {
   final bool isGuest;
   final String userName;
+  final String userId;
 
   const MainSystem({
     super.key,
     required this.isGuest,
-    required this.userName
+    required this.userName,
+    required this.userId,
   });
 
   @override
@@ -24,16 +27,14 @@ class MainSystem extends StatefulWidget {
 
 class _MainSystemState extends State<MainSystem> {
   int _currentIndex = 0;
-
-  // 💡 新增：全域同步狀態，預設為 false (未同步)
   bool _isSynced = false;
 
   final List<Sensor> _sensors = [
-    Sensor(id: 'S1', name: 'Sensor_L_ForeArm', mac: 'D4:22:CD:00:7D:2D'), // 左前臂 (LFA)
-    Sensor(id: 'S2', name: 'Sensor_R_ForeArm', mac: 'D4:22:CD:00:7E:FD'), // 右前臂 (RFA)
-    Sensor(id: 'S3', name: 'Sensor_L_Arm', mac: 'D4:22:CD:00:7E:A6'),     // 左大臂 (LA)
-    Sensor(id: 'S4', name: 'Sensor_R_Arm', mac: 'D4:22:CD:00:7C:AA'),     // 右大臂 (RA)
-    Sensor(id: 'S5', name: 'Sensor_Waist', mac: 'D4:22:CD:00:7A:28'),     // 腰部 (W)
+    Sensor(id: 'S1', name: 'Sensor_L_ForeArm', mac: 'D4:22:CD:00:7D:2D'),
+    Sensor(id: 'S2', name: 'Sensor_R_ForeArm', mac: 'D4:22:CD:00:7E:FD'),
+    Sensor(id: 'S3', name: 'Sensor_L_Arm', mac: 'D4:22:CD:00:7E:A6'),
+    Sensor(id: 'S4', name: 'Sensor_R_Arm', mac: 'D4:22:CD:00:7C:AA'),
+    Sensor(id: 'S5', name: 'Sensor_Waist', mac: 'D4:22:CD:00:7A:28'),
   ];
 
   AssessmentReport? _currentReport;
@@ -47,7 +48,6 @@ class _MainSystemState extends State<MainSystem> {
     }
   }
 
-  // 💡 接收設備頁面傳來的同步狀態變更
   void _handleSyncStatusChanged(bool status) {
     setState(() {
       _isSynced = status;
@@ -69,6 +69,7 @@ class _MainSystemState extends State<MainSystem> {
     final List<String> exercises = ['前平舉', '側平舉', '後平舉', '水平外展', '水平內收', '前向肩輪', '側向肩輪'];
     final math.Random random = math.Random();
     return AssessmentReport(
+      userId: widget.userId,
       fullDate: date,
       time: time,
       totalTime: duration,
@@ -112,11 +113,26 @@ class _MainSystemState extends State<MainSystem> {
     setState(() { _currentReport = report; _currentIndex = 2; });
   }
 
-  void _saveReport(AssessmentReport report) {
-    setState(() { _historyRecords.insert(0, report); _currentIndex = 3; });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: const Text('✅ 報告已儲存至歷史紀錄'), backgroundColor: const Color(0xFF0D9488), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-    );
+  void _saveReport(AssessmentReport report) async {
+    try {
+      await DatabaseHelper.instance.insertReport(report);
+
+      if (!mounted) return; // 💡 修復 async gap 警告
+
+      setState(() {
+        _historyRecords.insert(0, report);
+        _currentIndex = 3;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: const Text('✅ 報告已成功儲存至歷史紀錄'), backgroundColor: const Color(0xFF0D9488), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+      );
+    } catch (e) {
+      if (!mounted) return; // 💡 修復 catch 區塊的 async gap 警告
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ 儲存資料庫失敗'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+      );
+    }
   }
 
   @override
@@ -124,20 +140,29 @@ class _MainSystemState extends State<MainSystem> {
     final List<Widget> pagesList = [
       DashboardPage(
         sensors: _sensors,
-        isSynced: _isSynced, // 💡 傳給設備頁面
-        onSyncStatusChanged: _handleSyncStatusChanged, // 💡 接收同步狀態
+        isSynced: _isSynced,
+        onSyncStatusChanged: _handleSyncStatusChanged,
         onStateChanged: () => setState(() {}),
         onAnalysisCompleted: _handleAnalysisCompleted,
       ),
       RecordPage(
+        userId: widget.userId,
         sensors: _sensors,
-        isSynced: _isSynced, // 💡 傳給錄製頁面做判斷
+        isSynced: _isSynced,
         onSwitchTab: switchTab,
         onAnalysisCompleted: _handleAnalysisCompleted,
       ),
       AnalysisPage(hasData: _currentReport != null, reportData: _currentReport, userName: widget.userName, onSwitchTab: switchTab, onReportSaved: _saveReport),
-      HistoryPage(isGuest: widget.isGuest, historyRecords: _historyRecords, userName: widget.userName),
-      UserProfilePage(userName: widget.userName),
+      HistoryPage(
+          userId: widget.userId,
+          isGuest: widget.isGuest,
+          historyRecords: _historyRecords,
+          userName: widget.userName
+      ),
+      UserProfilePage(
+          userId: widget.userId,
+          userName: widget.userName
+      ),
     ];
 
     return Scaffold(
