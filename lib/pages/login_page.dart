@@ -145,8 +145,8 @@ class _LoginPageState extends State<LoginPage> {
 
   void _fillTestAccount() {
     setState(() {
-      _accountController.text = 'doctor2@example.com';
-      _passwordController.text = '123456bB';
+      _accountController.text = 'doctor3@example.com';
+      _passwordController.text = '123456cC';
     });
     _showTopSnackBar('已帶入測試帳號！如果是第一次使用，請先切換至註冊');
   }
