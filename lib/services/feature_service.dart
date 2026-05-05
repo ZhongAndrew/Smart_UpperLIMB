@@ -34,24 +34,24 @@ class FeatureService {
     }
   }
 
-  /// 傳入 256x50 的原始感測器資料，呼叫 C++ 瞬間算出 280 個特徵
+  /// 傳入 120x50 的原始感測器資料，呼叫 C++ 瞬間算出 280 個特徵
   List<double> extractFeatures(List<List<double>> windowData) {
     if (!_isInitialized) init();
 
-    // 嚴格的安全防護：確保維度絕對正確
-    if (windowData.length != 256 || windowData[0].length != 50) {
-      throw Exception('輸入資料維度錯誤！必須是 256 x 50');
+    // 💡 1. 這裡改成 120
+    if (windowData.length != 120 || windowData[0].length != 50) {
+      throw Exception('輸入資料維度錯誤！必須是 120 x 50');
     }
 
-    // 配置給 C++ 用的記憶體空間
-    final ffi.Pointer<ffi.Double> inputPtr = calloc<ffi.Double>(256 * 50);
-    final ffi.Pointer<ffi.Double> outputPtr = calloc<ffi.Double>(280);
+    // 💡 2. 配置記憶體改成 120 * 50
+    final ffi.Pointer<ffi.Double> inputPtr = calloc<ffi.Double>(120 * 50);
+    final ffi.Pointer<ffi.Double> outputPtr = calloc<ffi.Double>(270);
 
     try {
-      // 壓平矩陣 (Column-major，完全對齊 MATLAB 記憶體排列習慣)
-      for (int i = 0; i < 256; i++) {
+      // 💡 3. 壓平矩陣的迴圈高度改成 120
+      for (int i = 0; i < 120; i++) {
         for (int j = 0; j < 50; j++) {
-          inputPtr[j * 256 + i] = windowData[i][j];
+          inputPtr[j * 120 + i] = windowData[i][j];
         }
       }
 
@@ -59,7 +59,7 @@ class FeatureService {
       _runExtractFeatures(inputPtr, outputPtr);
 
       // 將 C++ 算好的特徵轉回 Dart 的 List
-      List<double> features = List.generate(280, (index) => outputPtr[index]);
+      List<double> features = List.generate(270, (index) => outputPtr[index]);
       return features;
 
     } finally {

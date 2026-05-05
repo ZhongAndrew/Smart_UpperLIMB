@@ -5,7 +5,7 @@
 // File: atan2.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 05-May-2026 15:28:56
 //
 
 #ifndef ATAN2_H
@@ -19,7 +19,7 @@
 // Function Declarations
 namespace feature_exraction {
 namespace coder {
-void b_atan2(const double y[256], const double x[256], double r[256]);
+void b_atan2(const double y[120], const double x[120], double r[120]);
 
 }
 } // namespace feature_exraction

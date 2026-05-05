@@ -5,7 +5,7 @@
 // File: mean.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 05-May-2026 15:28:56
 //
 
 // Include Files
@@ -14,19 +14,19 @@
 
 // Function Definitions
 //
-// Arguments    : const double x[256]
+// Arguments    : const double x[120]
 // Return Type  : double
 //
 namespace feature_exraction {
 namespace coder {
-double mean(const double x[256])
+double mean(const double x[120])
 {
   double y;
   y = x[0];
-  for (int k{0}; k < 255; k++) {
+  for (int k{0}; k < 119; k++) {
     y += x[k + 1];
   }
-  y /= 256.0;
+  y /= 120.0;
   return y;
 }
 

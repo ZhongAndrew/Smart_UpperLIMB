@@ -9,5 +9,3 @@ atan2.obj
 mean.obj
 std.obj
 minOrMax.obj
-abs.obj
-FFTImplementationCallback.obj

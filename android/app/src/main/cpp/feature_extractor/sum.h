@@ -5,7 +5,7 @@
 // File: sum.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 30-Mar-2026 10:32:12
+// C/C++ source code generated on  : 05-May-2026 15:28:56
 //
 
 #ifndef SUM_H
@@ -19,7 +19,7 @@
 // Function Declarations
 namespace feature_exraction {
 namespace coder {
-void sum(const double x[1024], double y[256]);
+void sum(const double x[480], double y[120]);
 
 }
 } // namespace feature_exraction

@@ -5,7 +5,7 @@
 // File: _coder_genc2_api.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 // Include Files
@@ -29,15 +29,15 @@ emlrtContext emlrtContextGlobal{
 
 // Function Declarations
 static real_T (*b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                   const emlrtMsgIdentifier *msgId))[280];
+                                   const emlrtMsgIdentifier *msgId))[270];
 
 static void emlrtExitTimeCleanupDtorFcn(const void *r);
 
 static real_T (*emlrt_marshallIn(const emlrtStack &sp, const mxArray *b_nullptr,
-                                 const char_T *identifier))[280];
+                                 const char_T *identifier))[270];
 
 static real_T (*emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
-                                 const emlrtMsgIdentifier *parentId))[280];
+                                 const emlrtMsgIdentifier *parentId))[270];
 
 static const mxArray *emlrt_marshallOut(const real_T u);
 
@@ -46,18 +46,18 @@ static const mxArray *emlrt_marshallOut(const real_T u);
 // Arguments    : const emlrtStack &sp
 //                const mxArray *src
 //                const emlrtMsgIdentifier *msgId
-// Return Type  : real_T (*)[280]
+// Return Type  : real_T (*)[270]
 //
 static real_T (*b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                   const emlrtMsgIdentifier *msgId))[280]
+                                   const emlrtMsgIdentifier *msgId))[270]
 {
-  static const int32_T dims[2]{1, 280};
-  real_T(*ret)[280];
+  static const int32_T dims[2]{1, 270};
+  real_T(*ret)[270];
   int32_T iv[2];
   boolean_T bv[2]{false, false};
   emlrtCheckVsBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 2U,
                             (const void *)&dims[0], &bv[0], &iv[0]);
-  ret = (real_T(*)[280])emlrtMxGetData(src);
+  ret = (real_T(*)[270])emlrtMxGetData(src);
   emlrtDestroyArray(&src);
   return ret;
 }
@@ -75,13 +75,13 @@ static void emlrtExitTimeCleanupDtorFcn(const void *r)
 // Arguments    : const emlrtStack &sp
 //                const mxArray *b_nullptr
 //                const char_T *identifier
-// Return Type  : real_T (*)[280]
+// Return Type  : real_T (*)[270]
 //
 static real_T (*emlrt_marshallIn(const emlrtStack &sp, const mxArray *b_nullptr,
-                                 const char_T *identifier))[280]
+                                 const char_T *identifier))[270]
 {
   emlrtMsgIdentifier thisId;
-  real_T(*y)[280];
+  real_T(*y)[270];
   thisId.fIdentifier = const_cast<const char_T *>(identifier);
   thisId.fParent = nullptr;
   thisId.bParentIsCell = false;
@@ -94,12 +94,12 @@ static real_T (*emlrt_marshallIn(const emlrtStack &sp, const mxArray *b_nullptr,
 // Arguments    : const emlrtStack &sp
 //                const mxArray *u
 //                const emlrtMsgIdentifier *parentId
-// Return Type  : real_T (*)[280]
+// Return Type  : real_T (*)[270]
 //
 static real_T (*emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
-                                 const emlrtMsgIdentifier *parentId))[280]
+                                 const emlrtMsgIdentifier *parentId))[270]
 {
-  real_T(*y)[280];
+  real_T(*y)[270];
   y = b_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
   emlrtDestroyArray(&u);
   return y;
@@ -131,7 +131,7 @@ void genc2_api(const mxArray *prhs, const mxArray **plhs)
       nullptr, // tls
       nullptr  // prev
   };
-  real_T(*X_s2)[280];
+  real_T(*X_s2)[270];
   real_T label_new;
   st.tls = emlrtRootTLSGlobal;
   // Marshall function inputs

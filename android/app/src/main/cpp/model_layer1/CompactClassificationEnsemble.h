@@ -5,7 +5,7 @@
 // File: CompactClassificationEnsemble.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:57:11
+// C/C++ source code generated on  : 05-May-2026 14:58:28
 //
 
 #ifndef COMPACTCLASSIFICATIONENSEMBLE_H
@@ -26,10 +26,10 @@ namespace classif {
 class CompactClassificationEnsemble {
 public:
   void init();
-  double predict(const double Xin[280]) const;
+  double predict(const double Xin[270]) const;
 
 protected:
-  void ensemblePredict(const double X[280], double score[2]) const;
+  void ensemblePredict(const double X[270], double score[2]) const;
 
 public:
   bool IsCached[200];

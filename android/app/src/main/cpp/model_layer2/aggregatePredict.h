@@ -5,7 +5,7 @@
 // File: aggregatePredict.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 #ifndef AGGREGATEPREDICT_H
@@ -23,7 +23,7 @@ namespace classreg {
 namespace learning {
 namespace coder {
 namespace ensembleutils {
-void aggregatePredict(const double X[280], const bool isCached[1000],
+void aggregatePredict(const double X[270], const bool isCached[1000],
                       const bool learners[1000], double score[18]);
 
 }

@@ -5,7 +5,7 @@
 // File: genc_internal_types.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:57:11
+// C/C++ source code generated on  : 05-May-2026 14:58:28
 //
 
 #ifndef GENC_INTERNAL_TYPES_H

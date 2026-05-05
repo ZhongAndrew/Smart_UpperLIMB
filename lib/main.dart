@@ -15,7 +15,7 @@ void main() async{
   }
 
   // ⚠️ 請確保你在 pubspec.yaml 裡面有宣告這個檔案路徑
-  String testFilePath = 'assets/s1_rawData.csv';
+  String testFilePath = 'assets/raw_data_s1.csv';
 
   // 執行我們上一回合寫的虛擬藍牙發射器
   await MockBluetoothTester.runTest(testFilePath);

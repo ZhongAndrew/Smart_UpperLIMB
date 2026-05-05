@@ -6,8 +6,8 @@ import 'package:smart_rehab_pro/utils/csv_exporter.dart'; // 如果你想保留�
 
 class RehabPipeline {
   // --- 系統常數 ---
-  final int windowSize = 256;
-  final int stepSize = 16;
+  final int windowSize = 120;
+  final int stepSize = 8;
 
   // --- 狀態變數 (記憶體暫存) ---
   final List<List<double>> _windowBuffer = [];
@@ -39,7 +39,7 @@ class RehabPipeline {
 
   /// 3. 處理單一 Window (特徵擷取)
   void _processWindow() {
-    // 呼叫 C++ 榨出 280 個特徵，並存入特徵庫
+    // 呼叫 C++ 榨出 270 個特徵，並存入特徵庫
     List<double> features = FeatureService().extractFeatures(_windowBuffer);
     _allExtractedFeatures.add(features);
   }

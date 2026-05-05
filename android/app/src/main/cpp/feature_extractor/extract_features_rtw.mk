@@ -2,7 +2,7 @@
 ## Makefile generated for component 'extract_features'. 
 ## 
 ## Makefile     : extract_features_rtw.mk
-## Generated on : Mon Mar 30 10:32:20 2026
+## Generated on : Tue May 05 15:29:06 2026
 ## Final product: .\extract_features.lib
 ## Product type : static-library
 ## 
@@ -184,7 +184,7 @@ DEFINES = $(DEFINES_CUSTOM) $(DEFINES_STANDARD)
 ## SOURCE FILES
 ###########################################################################
 
-SRCS = $(START_DIR)\rt_nonfinite.cpp $(START_DIR)\rtGetNaN.cpp $(START_DIR)\rtGetInf.cpp $(START_DIR)\extract_features_initialize.cpp $(START_DIR)\extract_features_terminate.cpp $(START_DIR)\extract_features.cpp $(START_DIR)\sum.cpp $(START_DIR)\atan2.cpp $(START_DIR)\mean.cpp $(START_DIR)\std.cpp $(START_DIR)\minOrMax.cpp $(START_DIR)\abs.cpp $(START_DIR)\FFTImplementationCallback.cpp
+SRCS = $(START_DIR)\rt_nonfinite.cpp $(START_DIR)\rtGetNaN.cpp $(START_DIR)\rtGetInf.cpp $(START_DIR)\extract_features_initialize.cpp $(START_DIR)\extract_features_terminate.cpp $(START_DIR)\extract_features.cpp $(START_DIR)\sum.cpp $(START_DIR)\atan2.cpp $(START_DIR)\mean.cpp $(START_DIR)\std.cpp $(START_DIR)\minOrMax.cpp
 
 ALL_SRCS = $(SRCS)
 
@@ -192,7 +192,7 @@ ALL_SRCS = $(SRCS)
 ## OBJECTS
 ###########################################################################
 
-OBJS = rt_nonfinite.obj rtGetNaN.obj rtGetInf.obj extract_features_initialize.obj extract_features_terminate.obj extract_features.obj sum.obj atan2.obj mean.obj std.obj minOrMax.obj abs.obj FFTImplementationCallback.obj
+OBJS = rt_nonfinite.obj rtGetNaN.obj rtGetInf.obj extract_features_initialize.obj extract_features_terminate.obj extract_features.obj sum.obj atan2.obj mean.obj std.obj minOrMax.obj
 
 ALL_OBJS = $(OBJS)
 
@@ -400,14 +400,6 @@ std.obj : "$(START_DIR)\std.cpp"
 
 minOrMax.obj : "$(START_DIR)\minOrMax.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\minOrMax.cpp"
-
-
-abs.obj : "$(START_DIR)\abs.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\abs.cpp"
-
-
-FFTImplementationCallback.obj : "$(START_DIR)\FFTImplementationCallback.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\FFTImplementationCallback.cpp"
 
 
 ###########################################################################

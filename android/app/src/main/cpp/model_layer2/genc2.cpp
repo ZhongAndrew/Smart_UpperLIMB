@@ -5,7 +5,7 @@
 // File: genc2.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 // Include Files
@@ -14,11 +14,11 @@
 
 // Function Definitions
 //
-// Arguments    : const double X_s2[280]
+// Arguments    : const double X_s2[270]
 // Return Type  : double
 //
 namespace layer2 {
-double genc2(const double X_s2[280])
+double genc2(const double X_s2[270])
 {
   coder::classreg::learning::classif::CompactClassificationEnsemble r;
   r.init();

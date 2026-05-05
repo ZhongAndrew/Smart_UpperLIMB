@@ -96,12 +96,12 @@ class NativeService {
 
   int predictRealAction(List<double> features) {
     if (!_isInitialized) init();
-    if (features.length != 280) throw Exception("特徵數量錯誤：預期 280，實際收到 ${features.length}");
+    if (features.length != 270) throw Exception("特徵數量錯誤：預期 270，實際收到 ${features.length}");
 
     _resetL1(); _resetL2();
 
-    final ptr = calloc<ffi.Double>(280);
-    for (int i = 0; i < 280; i++) { ptr[i] = features[i]; }
+    final ptr = calloc<ffi.Double>(270);
+    for (int i = 0; i < 270; i++) { ptr[i] = features[i]; }
 
     int finalPrediction = -1;
     try {
@@ -147,22 +147,22 @@ class NativeService {
   }
 
   /// 即時預測單一 Window 的動作
-  /// 傳入: 280 個經過正規化的特徵 (List<double>)
+  /// 傳入: 270 個經過正規化的特徵 (List<double>)
   /// 回傳: 預測的動作類別 (0 表示靜止，1~18 表示具體動作)
   int predictAction(List<double> features) {
     if (!_isInitialized) init();
 
     // 確保輸入特徵數量正確防呆
-    if (features.length != 280) {
-      print("⚠️ 警告：送入的特徵數量不是 280！目前數量: ${features.length}");
+    if (features.length != 270) {
+      print("⚠️ 警告：送入的特徵數量不是 270！目前數量: ${features.length}");
       return 0;
     }
 
     // 1. 配置一塊 C++ 看得懂的記憶體空間
-    final ptr = calloc<ffi.Double>(280);
+    final ptr = calloc<ffi.Double>(270);
 
     // 2. 將 Dart 的 List<double> 複製進指標中 (包含 NaN 解藥)
-    for (int i = 0; i < 280; i++) {
+    for (int i = 0; i < 270; i++) {
       double val = features[i];
       if (val.isNaN || val.isInfinite) val = 0.0;
       ptr[i] = val;
@@ -196,8 +196,8 @@ class NativeService {
   List<int> getRawPredictions(List<double> features) {
     if (!_isInitialized) init();
 
-    final ptr = calloc<ffi.Double>(280);
-    for (int i = 0; i < 280; i++) {
+    final ptr = calloc<ffi.Double>(270);
+    for (int i = 0; i < 270; i++) {
       double val = features[i];
       if (val.isNaN || val.isInfinite) val = 0.0;
       ptr[i] = val;

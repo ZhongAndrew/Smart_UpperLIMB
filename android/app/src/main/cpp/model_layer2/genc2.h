@@ -5,7 +5,7 @@
 // File: genc2.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 #ifndef GENC2_H
@@ -18,7 +18,7 @@
 
 // Function Declarations
 namespace layer2 {
-extern double genc2(const double X_s2[280]);
+extern double genc2(const double X_s2[270]);
 
 }
 

@@ -5,7 +5,7 @@
 // File: main.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:57:11
+// C/C++ source code generated on  : 05-May-2026 14:58:28
 //
 
 /*************************************************************************/
@@ -40,19 +40,19 @@
 #include "genc_terminate.h"
 
 // Function Declarations
-static void argInit_1x280_real_T(double result[280]);
+static void argInit_1x270_real_T(double result[270]);
 
 static double argInit_real_T();
 
 // Function Definitions
 //
-// Arguments    : double result[280]
+// Arguments    : double result[270]
 // Return Type  : void
 //
-static void argInit_1x280_real_T(double result[280])
+static void argInit_1x270_real_T(double result[270])
 {
   // Loop over the array to initialize each element.
-  for (int idx1{0}; idx1 < 280; idx1++) {
+  for (int idx1{0}; idx1 < 270; idx1++) {
     // Set the value of the array element.
     // Change this value to the value that the application requires.
     result[idx1] = argInit_real_T();
@@ -93,12 +93,12 @@ int main(int, char **)
 //
 void main_genc()
 {
-  double dv[280];
+  double dv[270];
   double label_new;
   // Initialize function 'genc' input arguments.
   // Initialize function input argument 'X_s1'.
   // Call the entry-point 'genc'.
-  argInit_1x280_real_T(dv);
+  argInit_1x270_real_T(dv);
   label_new = layer1::genc(dv);
 }
 

@@ -5,7 +5,7 @@
 // File: CompactClassificationTree.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 #ifndef COMPACTCLASSIFICATIONTREE_H
@@ -26,41 +26,7 @@ namespace classif {
 class CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  double CutPredictorIndex[377];
-  double Children[754];
-  double CutPoint[377];
-  bool NanCutPoints[377];
-  bool InfCutPoints[377];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6786];
-};
-
-class b_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -91,214 +57,23 @@ public:
   void db_init();
   void eb_init();
   void fb_init();
-  double CutPredictorIndex[363];
-  double Children[726];
-  double CutPoint[363];
-  bool NanCutPoints[363];
-  bool InfCutPoints[363];
+  double CutPredictorIndex[361];
+  double Children[722];
+  double CutPoint[361];
+  bool NanCutPoints[361];
+  bool InfCutPoints[361];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[6534];
+  double ClassProbability[6498];
 };
 
-class c_CompactClassificationTree {
+class b_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  double CutPredictorIndex[333];
-  double Children[666];
-  double CutPoint[333];
-  bool NanCutPoints[333];
-  bool InfCutPoints[333];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5994];
-};
-
-class d_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  double CutPredictorIndex[369];
-  double Children[738];
-  double CutPoint[369];
-  bool NanCutPoints[369];
-  bool InfCutPoints[369];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6642];
-};
-
-class e_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  double CutPredictorIndex[311];
-  double Children[622];
-  double CutPoint[311];
-  bool NanCutPoints[311];
-  bool InfCutPoints[311];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5598];
-};
-
-class f_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  double CutPredictorIndex[367];
-  double Children[734];
-  double CutPoint[367];
-  bool NanCutPoints[367];
-  bool InfCutPoints[367];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6606];
-};
-
-class g_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  double CutPredictorIndex[341];
-  double Children[682];
-  double CutPoint[341];
-  bool NanCutPoints[341];
-  bool InfCutPoints[341];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6138];
-};
-
-class h_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -331,23 +106,156 @@ public:
   void fb_init();
   void gb_init();
   void hb_init();
-  double CutPredictorIndex[353];
-  double Children[706];
-  double CutPoint[353];
-  bool NanCutPoints[353];
-  bool InfCutPoints[353];
+  void ib_init();
+  void jb_init();
+  void kb_init();
+  void lb_init();
+  double CutPredictorIndex[355];
+  double Children[710];
+  double CutPoint[355];
+  bool NanCutPoints[355];
+  bool InfCutPoints[355];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[6354];
+  double ClassProbability[6390];
 };
 
-class i_CompactClassificationTree {
+class c_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  double CutPredictorIndex[421];
+  double Children[842];
+  double CutPoint[421];
+  bool NanCutPoints[421];
+  bool InfCutPoints[421];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7578];
+};
+
+class d_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  double CutPredictorIndex[311];
+  double Children[622];
+  double CutPoint[311];
+  bool NanCutPoints[311];
+  bool InfCutPoints[311];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5598];
+};
+
+class e_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  double CutPredictorIndex[335];
+  double Children[670];
+  double CutPoint[335];
+  bool NanCutPoints[335];
+  bool InfCutPoints[335];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6030];
+};
+
+class f_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  double CutPredictorIndex[363];
+  double Children[726];
+  double CutPoint[363];
+  bool NanCutPoints[363];
+  bool InfCutPoints[363];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6534];
+};
+
+class g_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -379,23 +287,34 @@ public:
   void eb_init();
   void fb_init();
   void gb_init();
-  double CutPredictorIndex[351];
-  double Children[702];
-  double CutPoint[351];
-  bool NanCutPoints[351];
-  bool InfCutPoints[351];
+  void hb_init();
+  void ib_init();
+  void jb_init();
+  void kb_init();
+  void lb_init();
+  void mb_init();
+  void nb_init();
+  void ob_init();
+  void pb_init();
+  void qb_init();
+  void rb_init();
+  double CutPredictorIndex[345];
+  double Children[690];
+  double CutPoint[345];
+  bool NanCutPoints[345];
+  bool InfCutPoints[345];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[6318];
+  double ClassProbability[6210];
 };
 
-class j_CompactClassificationTree {
+class h_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -422,6 +341,488 @@ public:
   void y_init();
   void ab_init();
   void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  double CutPredictorIndex[329];
+  double Children[658];
+  double CutPoint[329];
+  bool NanCutPoints[329];
+  bool InfCutPoints[329];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5922];
+};
+
+class i_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  double CutPredictorIndex[321];
+  double Children[642];
+  double CutPoint[321];
+  bool NanCutPoints[321];
+  bool InfCutPoints[321];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5778];
+};
+
+class j_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  double CutPredictorIndex[373];
+  double Children[746];
+  double CutPoint[373];
+  bool NanCutPoints[373];
+  bool InfCutPoints[373];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6714];
+};
+
+class k_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  double CutPredictorIndex[393];
+  double Children[786];
+  double CutPoint[393];
+  bool NanCutPoints[393];
+  bool InfCutPoints[393];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7074];
+};
+
+class l_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  void hb_init();
+  void ib_init();
+  void jb_init();
+  void kb_init();
+  void lb_init();
+  double CutPredictorIndex[353];
+  double Children[706];
+  double CutPoint[353];
+  bool NanCutPoints[353];
+  bool InfCutPoints[353];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6354];
+};
+
+class m_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  double CutPredictorIndex[381];
+  double Children[762];
+  double CutPoint[381];
+  bool NanCutPoints[381];
+  bool InfCutPoints[381];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6858];
+};
+
+class n_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  void hb_init();
+  void ib_init();
+  void jb_init();
+  void kb_init();
+  double CutPredictorIndex[343];
+  double Children[686];
+  double CutPoint[343];
+  bool NanCutPoints[343];
+  bool InfCutPoints[343];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6174];
+};
+
+class o_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  void hb_init();
+  double CutPredictorIndex[337];
+  double Children[674];
+  double CutPoint[337];
+  bool NanCutPoints[337];
+  bool InfCutPoints[337];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6066];
+};
+
+class p_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  double CutPredictorIndex[323];
+  double Children[646];
+  double CutPoint[323];
+  bool NanCutPoints[323];
+  bool InfCutPoints[323];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5814];
+};
+
+class q_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  void hb_init();
+  void ib_init();
+  void jb_init();
+  double CutPredictorIndex[331];
+  double Children[662];
+  double CutPoint[331];
+  bool NanCutPoints[331];
+  bool InfCutPoints[331];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5958];
+};
+
+class r_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  double CutPredictorIndex[357];
+  double Children[714];
+  double CutPoint[357];
+  bool NanCutPoints[357];
+  bool InfCutPoints[357];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6426];
+};
+
+class s_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  double CutPredictorIndex[371];
+  double Children[742];
+  double CutPoint[371];
+  bool NanCutPoints[371];
+  bool InfCutPoints[371];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6678];
+};
+
+class t_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
   double CutPredictorIndex[319];
   double Children[638];
   double CutPoint[319];
@@ -435,39 +836,49 @@ public:
   double ClassProbability[5742];
 };
 
-class k_CompactClassificationTree {
+class u_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
   void e_init();
   void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  double CutPredictorIndex[375];
-  double Children[750];
-  double CutPoint[375];
-  bool NanCutPoints[375];
-  bool InfCutPoints[375];
+  double CutPredictorIndex[395];
+  double Children[790];
+  double CutPoint[395];
+  bool NanCutPoints[395];
+  bool InfCutPoints[395];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[6750];
+  double ClassProbability[7110];
 };
 
-class l_CompactClassificationTree {
+class v_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  double CutPredictorIndex[403];
+  double Children[806];
+  double CutPoint[403];
+  bool NanCutPoints[403];
+  bool InfCutPoints[403];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7254];
+};
+
+class w_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -494,23 +905,338 @@ public:
   void y_init();
   void ab_init();
   void bb_init();
-  double CutPredictorIndex[361];
-  double Children[722];
-  double CutPoint[361];
-  bool NanCutPoints[361];
-  bool InfCutPoints[361];
+  double CutPredictorIndex[327];
+  double Children[654];
+  double CutPoint[327];
+  bool NanCutPoints[327];
+  bool InfCutPoints[327];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[6498];
+  double ClassProbability[5886];
 };
 
-class m_CompactClassificationTree {
+class x_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  double CutPredictorIndex[289];
+  double Children[578];
+  double CutPoint[289];
+  bool NanCutPoints[289];
+  bool InfCutPoints[289];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5202];
+};
+
+class y_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  double CutPredictorIndex[341];
+  double Children[682];
+  double CutPoint[341];
+  bool NanCutPoints[341];
+  bool InfCutPoints[341];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6138];
+};
+
+class ab_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  double CutPredictorIndex[367];
+  double Children[734];
+  double CutPoint[367];
+  bool NanCutPoints[367];
+  bool InfCutPoints[367];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6606];
+};
+
+class bb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  void hb_init();
+  double CutPredictorIndex[347];
+  double Children[694];
+  double CutPoint[347];
+  bool NanCutPoints[347];
+  bool InfCutPoints[347];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6246];
+};
+
+class cb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  double CutPredictorIndex[377];
+  double Children[754];
+  double CutPoint[377];
+  bool NanCutPoints[377];
+  bool InfCutPoints[377];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6786];
+};
+
+class db_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  void db_init();
+  void eb_init();
+  void fb_init();
+  void gb_init();
+  void hb_init();
+  double CutPredictorIndex[325];
+  double Children[650];
+  double CutPoint[325];
+  bool NanCutPoints[325];
+  bool InfCutPoints[325];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5850];
+};
+
+class eb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  double CutPredictorIndex[349];
+  double Children[698];
+  double CutPoint[349];
+  bool NanCutPoints[349];
+  bool InfCutPoints[349];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6282];
+};
+
+class fb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  double CutPredictorIndex[379];
+  double Children[758];
+  double CutPoint[379];
+  bool NanCutPoints[379];
+  bool InfCutPoints[379];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6822];
+};
+
+class gb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  double CutPredictorIndex[405];
+  double Children[810];
+  double CutPoint[405];
+  bool NanCutPoints[405];
+  bool InfCutPoints[405];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7290];
+};
+
+class hb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -554,1276 +1280,12 @@ public:
   double ClassProbability[6462];
 };
 
-class n_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  double CutPredictorIndex[339];
-  double Children[678];
-  double CutPoint[339];
-  bool NanCutPoints[339];
-  bool InfCutPoints[339];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6102];
-};
-
-class o_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  double CutPredictorIndex[329];
-  double Children[658];
-  double CutPoint[329];
-  bool NanCutPoints[329];
-  bool InfCutPoints[329];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5922];
-};
-
-class p_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  double CutPredictorIndex[371];
-  double Children[742];
-  double CutPoint[371];
-  bool NanCutPoints[371];
-  bool InfCutPoints[371];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6678];
-};
-
-class q_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  double CutPredictorIndex[357];
-  double Children[714];
-  double CutPoint[357];
-  bool NanCutPoints[357];
-  bool InfCutPoints[357];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6426];
-};
-
-class r_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  void eb_init();
-  void fb_init();
-  void gb_init();
-  void hb_init();
-  void ib_init();
-  void jb_init();
-  void kb_init();
-  double CutPredictorIndex[337];
-  double Children[674];
-  double CutPoint[337];
-  bool NanCutPoints[337];
-  bool InfCutPoints[337];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6066];
-};
-
-class s_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  double CutPredictorIndex[373];
-  double Children[746];
-  double CutPoint[373];
-  bool NanCutPoints[373];
-  bool InfCutPoints[373];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6714];
-};
-
-class t_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  double CutPredictorIndex[315];
-  double Children[630];
-  double CutPoint[315];
-  bool NanCutPoints[315];
-  bool InfCutPoints[315];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5670];
-};
-
-class u_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  double CutPredictorIndex[327];
-  double Children[654];
-  double CutPoint[327];
-  bool NanCutPoints[327];
-  bool InfCutPoints[327];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5886];
-};
-
-class v_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  double CutPredictorIndex[391];
-  double Children[782];
-  double CutPoint[391];
-  bool NanCutPoints[391];
-  bool InfCutPoints[391];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7038];
-};
-
-class w_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  double CutPredictorIndex[305];
-  double Children[610];
-  double CutPoint[305];
-  bool NanCutPoints[305];
-  bool InfCutPoints[305];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5490];
-};
-
-class x_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  double CutPredictorIndex[325];
-  double Children[650];
-  double CutPoint[325];
-  bool NanCutPoints[325];
-  bool InfCutPoints[325];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5850];
-};
-
-class y_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  double CutPredictorIndex[385];
-  double Children[770];
-  double CutPoint[385];
-  bool NanCutPoints[385];
-  bool InfCutPoints[385];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6930];
-};
-
-class ab_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[279];
-  double Children[558];
-  double CutPoint[279];
-  bool NanCutPoints[279];
-  bool InfCutPoints[279];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5022];
-};
-
-class bb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  void eb_init();
-  void fb_init();
-  void gb_init();
-  void hb_init();
-  void ib_init();
-  void jb_init();
-  void kb_init();
-  void lb_init();
-  void mb_init();
-  void nb_init();
-  void ob_init();
-  void pb_init();
-  void qb_init();
-  void rb_init();
-  void sb_init();
-  void tb_init();
-  void ub_init();
-  void vb_init();
-  void wb_init();
-  void xb_init();
-  void yb_init();
-  void ac_init();
-  void bc_init();
-  double CutPredictorIndex[345];
-  double Children[690];
-  double CutPoint[345];
-  bool NanCutPoints[345];
-  bool InfCutPoints[345];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6210];
-};
-
-class cb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  double CutPredictorIndex[335];
-  double Children[670];
-  double CutPoint[335];
-  bool NanCutPoints[335];
-  bool InfCutPoints[335];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6030];
-};
-
-class db_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  void eb_init();
-  void fb_init();
-  void gb_init();
-  void hb_init();
-  void ib_init();
-  void jb_init();
-  void kb_init();
-  void lb_init();
-  void mb_init();
-  void nb_init();
-  void ob_init();
-  void pb_init();
-  double CutPredictorIndex[365];
-  double Children[730];
-  double CutPoint[365];
-  bool NanCutPoints[365];
-  bool InfCutPoints[365];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6570];
-};
-
-class eb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  double CutPredictorIndex[313];
-  double Children[626];
-  double CutPoint[313];
-  bool NanCutPoints[313];
-  bool InfCutPoints[313];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5634];
-};
-
-class fb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  double CutPredictorIndex[349];
-  double Children[698];
-  double CutPoint[349];
-  bool NanCutPoints[349];
-  bool InfCutPoints[349];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6282];
-};
-
-class gb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  void eb_init();
-  void fb_init();
-  void gb_init();
-  double CutPredictorIndex[355];
-  double Children[710];
-  double CutPoint[355];
-  bool NanCutPoints[355];
-  bool InfCutPoints[355];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6390];
-};
-
-class hb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  double CutPredictorIndex[331];
-  double Children[662];
-  double CutPoint[331];
-  bool NanCutPoints[331];
-  bool InfCutPoints[331];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5958];
-};
-
 class ib_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  double CutPredictorIndex[317];
-  double Children[634];
-  double CutPoint[317];
-  bool NanCutPoints[317];
-  bool InfCutPoints[317];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5706];
-};
-
-class jb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  double CutPredictorIndex[323];
-  double Children[646];
-  double CutPoint[323];
-  bool NanCutPoints[323];
-  bool InfCutPoints[323];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5814];
-};
-
-class kb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  double CutPredictorIndex[393];
-  double Children[786];
-  double CutPoint[393];
-  bool NanCutPoints[393];
-  bool InfCutPoints[393];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7074];
-};
-
-class lb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  double CutPredictorIndex[383];
-  double Children[766];
-  double CutPoint[383];
-  bool NanCutPoints[383];
-  bool InfCutPoints[383];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6894];
-};
-
-class mb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  double CutPredictorIndex[425];
-  double Children[850];
-  double CutPoint[425];
-  bool NanCutPoints[425];
-  bool InfCutPoints[425];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7650];
-};
-
-class nb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  double CutPredictorIndex[389];
-  double Children[778];
-  double CutPoint[389];
-  bool NanCutPoints[389];
-  bool InfCutPoints[389];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7002];
-};
-
-class ob_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  double CutPredictorIndex[379];
-  double Children[758];
-  double CutPoint[379];
-  bool NanCutPoints[379];
-  bool InfCutPoints[379];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6822];
-};
-
-class pb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  void eb_init();
-  void fb_init();
-  double CutPredictorIndex[343];
-  double Children[686];
-  double CutPoint[343];
-  bool NanCutPoints[343];
-  bool InfCutPoints[343];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6174];
-};
-
-class qb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  void m_init();
-  void n_init();
-  void o_init();
-  void p_init();
-  void q_init();
-  void r_init();
-  void s_init();
-  void t_init();
-  void u_init();
-  void v_init();
-  void w_init();
-  void x_init();
-  void y_init();
-  void ab_init();
-  void bb_init();
-  void cb_init();
-  void db_init();
-  void eb_init();
-  void fb_init();
-  void gb_init();
-  double CutPredictorIndex[347];
-  double Children[694];
-  double CutPoint[347];
-  bool NanCutPoints[347];
-  bool InfCutPoints[347];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6246];
-};
-
-class rb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  void l_init();
-  double CutPredictorIndex[321];
-  double Children[642];
-  double CutPoint[321];
-  bool NanCutPoints[321];
-  bool InfCutPoints[321];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5778];
-};
-
-class sb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  double CutPredictorIndex[395];
-  double Children[790];
-  double CutPoint[395];
-  bool NanCutPoints[395];
-  bool InfCutPoints[395];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7110];
-};
-
-class tb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  double CutPredictorIndex[303];
-  double Children[606];
-  double CutPoint[303];
-  bool NanCutPoints[303];
-  bool InfCutPoints[303];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5454];
-};
-
-class ub_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  double CutPredictorIndex[307];
-  double Children[614];
-  double CutPoint[307];
-  bool NanCutPoints[307];
-  bool InfCutPoints[307];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5526];
-};
-
-class vb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  double CutPredictorIndex[401];
-  double Children[802];
-  double CutPoint[401];
-  bool NanCutPoints[401];
-  bool InfCutPoints[401];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7218];
-};
-
-class wb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  void g_init();
-  void h_init();
-  void i_init();
-  void j_init();
-  void k_init();
-  double CutPredictorIndex[381];
-  double Children[762];
-  double CutPoint[381];
-  bool NanCutPoints[381];
-  bool InfCutPoints[381];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6858];
-};
-
-class xb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
-  double CutPredictorIndex[387];
-  double Children[774];
-  double CutPoint[387];
-  bool NanCutPoints[387];
-  bool InfCutPoints[387];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[6966];
-};
-
-class yb_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  double CutPredictorIndex[309];
-  double Children[618];
-  double CutPoint[309];
-  bool NanCutPoints[309];
-  bool InfCutPoints[309];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5562];
-};
-
-class ac_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[413];
-  double Children[826];
-  double CutPoint[413];
-  bool NanCutPoints[413];
-  bool InfCutPoints[413];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7434];
-};
-
-class bc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[409];
-  double Children[818];
-  double CutPoint[409];
-  bool NanCutPoints[409];
-  bool InfCutPoints[409];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7362];
-};
-
-class cc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  void d_init();
-  void e_init();
-  void f_init();
   double CutPredictorIndex[301];
   double Children[602];
   double CutPoint[301];
@@ -1837,10 +1299,30 @@ public:
   double ClassProbability[5418];
 };
 
-class dc_CompactClassificationTree {
+class jb_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  double CutPredictorIndex[401];
+  double Children[802];
+  double CutPoint[401];
+  bool NanCutPoints[401];
+  bool InfCutPoints[401];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7218];
+};
+
+class kb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
@@ -1848,6 +1330,59 @@ public:
   void f_init();
   void g_init();
   void h_init();
+  void i_init();
+  void j_init();
+  double CutPredictorIndex[303];
+  double Children[606];
+  double CutPoint[303];
+  bool NanCutPoints[303];
+  bool InfCutPoints[303];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5454];
+};
+
+class lb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  double CutPredictorIndex[365];
+  double Children[730];
+  double CutPoint[365];
+  bool NanCutPoints[365];
+  bool InfCutPoints[365];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6570];
+};
+
+class mb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   double CutPredictorIndex[399];
   double Children[798];
   double CutPoint[399];
@@ -1861,86 +1396,299 @@ public:
   double ClassProbability[7182];
 };
 
-class ec_CompactClassificationTree {
+class nb_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  double CutPredictorIndex[411];
+  double Children[822];
+  double CutPoint[411];
+  bool NanCutPoints[411];
+  bool InfCutPoints[411];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7398];
+};
+
+class ob_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
-  double CutPredictorIndex[397];
-  double Children[794];
-  double CutPoint[397];
-  bool NanCutPoints[397];
-  bool InfCutPoints[397];
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  double CutPredictorIndex[313];
+  double Children[626];
+  double CutPoint[313];
+  bool NanCutPoints[313];
+  bool InfCutPoints[313];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[7146];
+  double ClassProbability[5634];
 };
 
-class fc_CompactClassificationTree {
+class pb_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[297];
-  double Children[594];
-  double CutPoint[297];
-  bool NanCutPoints[297];
-  bool InfCutPoints[297];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5346];
-};
-
-class gc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  double CutPredictorIndex[407];
-  double Children[814];
-  double CutPoint[407];
-  bool NanCutPoints[407];
-  bool InfCutPoints[407];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7326];
-};
-
-class hc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   void c_init();
   void d_init();
-  double CutPredictorIndex[403];
-  double Children[806];
-  double CutPoint[403];
-  bool NanCutPoints[403];
-  bool InfCutPoints[403];
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  void y_init();
+  void ab_init();
+  void bb_init();
+  void cb_init();
+  double CutPredictorIndex[339];
+  double Children[678];
+  double CutPoint[339];
+  bool NanCutPoints[339];
+  bool InfCutPoints[339];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[7254];
+  double ClassProbability[6102];
 };
 
-class ic_CompactClassificationTree {
+class qb_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  double CutPredictorIndex[307];
+  double Children[614];
+  double CutPoint[307];
+  bool NanCutPoints[307];
+  bool InfCutPoints[307];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5526];
+};
+
+class rb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  void v_init();
+  void w_init();
+  void x_init();
+  double CutPredictorIndex[317];
+  double Children[634];
+  double CutPoint[317];
+  bool NanCutPoints[317];
+  bool InfCutPoints[317];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5706];
+};
+
+class sb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  double CutPredictorIndex[333];
+  double Children[666];
+  double CutPoint[333];
+  bool NanCutPoints[333];
+  bool InfCutPoints[333];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5994];
+};
+
+class tb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  double CutPredictorIndex[369];
+  double Children[738];
+  double CutPoint[369];
+  bool NanCutPoints[369];
+  bool InfCutPoints[369];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6642];
+};
+
+class ub_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  void r_init();
+  void s_init();
+  void t_init();
+  void u_init();
+  double CutPredictorIndex[351];
+  double Children[702];
+  double CutPoint[351];
+  bool NanCutPoints[351];
+  bool InfCutPoints[351];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6318];
+};
+
+class vb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  double CutPredictorIndex[391];
+  double Children[782];
+  double CutPoint[391];
+  bool NanCutPoints[391];
+  bool InfCutPoints[391];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7038];
+};
+
+class wb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
   double CutPredictorIndex[291];
   double Children[582];
   double CutPoint[291];
@@ -1954,27 +1702,316 @@ public:
   double ClassProbability[5238];
 };
 
-class jc_CompactClassificationTree {
+class xb_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[433];
-  double Children[866];
-  double CutPoint[433];
-  bool NanCutPoints[433];
-  bool InfCutPoints[433];
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  double CutPredictorIndex[299];
+  double Children[598];
+  double CutPoint[299];
+  bool NanCutPoints[299];
+  bool InfCutPoints[299];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[7794];
+  double ClassProbability[5382];
+};
+
+class yb_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  void l_init();
+  void m_init();
+  void n_init();
+  void o_init();
+  void p_init();
+  void q_init();
+  double CutPredictorIndex[315];
+  double Children[630];
+  double CutPoint[315];
+  bool NanCutPoints[315];
+  bool InfCutPoints[315];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5670];
+};
+
+class ac_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  double CutPredictorIndex[409];
+  double Children[818];
+  double CutPoint[409];
+  bool NanCutPoints[409];
+  bool InfCutPoints[409];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7362];
+};
+
+class bc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  double CutPredictorIndex[387];
+  double Children[774];
+  double CutPoint[387];
+  bool NanCutPoints[387];
+  bool InfCutPoints[387];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6966];
+};
+
+class cc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  void i_init();
+  void j_init();
+  void k_init();
+  double CutPredictorIndex[375];
+  double Children[750];
+  double CutPoint[375];
+  bool NanCutPoints[375];
+  bool InfCutPoints[375];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6750];
+};
+
+class dc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  double CutPredictorIndex[383];
+  double Children[766];
+  double CutPoint[383];
+  bool NanCutPoints[383];
+  bool InfCutPoints[383];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6894];
+};
+
+class ec_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  double CutPredictorIndex[293];
+  double Children[586];
+  double CutPoint[293];
+  bool NanCutPoints[293];
+  bool InfCutPoints[293];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5274];
+};
+
+class fc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  double CutPredictorIndex[389];
+  double Children[778];
+  double CutPoint[389];
+  bool NanCutPoints[389];
+  bool InfCutPoints[389];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7002];
+};
+
+class gc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  double CutPredictorIndex[297];
+  double Children[594];
+  double CutPoint[297];
+  bool NanCutPoints[297];
+  bool InfCutPoints[297];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5346];
+};
+
+class hc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  double CutPredictorIndex[385];
+  double Children[770];
+  double CutPoint[385];
+  bool NanCutPoints[385];
+  bool InfCutPoints[385];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[6930];
+};
+
+class ic_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  double CutPredictorIndex[305];
+  double Children[610];
+  double CutPoint[305];
+  bool NanCutPoints[305];
+  bool InfCutPoints[305];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5490];
+};
+
+class jc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  void c_init();
+  void d_init();
+  void e_init();
+  void f_init();
+  void g_init();
+  void h_init();
+  double CutPredictorIndex[309];
+  double Children[618];
+  double CutPoint[309];
+  bool NanCutPoints[309];
+  bool InfCutPoints[309];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5562];
 };
 
 class kc_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
+  double CutPredictorIndex[413];
+  double Children[826];
+  double CutPoint[413];
+  bool NanCutPoints[413];
+  bool InfCutPoints[413];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7434];
+};
+
+class lc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  double CutPredictorIndex[397];
+  double Children[794];
+  double CutPoint[397];
+  bool NanCutPoints[397];
+  bool InfCutPoints[397];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7146];
+};
+
+class mc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
   void b_init();
   double CutPredictorIndex[295];
   double Children[590];
@@ -1989,115 +2026,28 @@ public:
   double ClassProbability[5310];
 };
 
-class lc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  double CutPredictorIndex[299];
-  double Children[598];
-  double CutPoint[299];
-  bool NanCutPoints[299];
-  bool InfCutPoints[299];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5382];
-};
-
-class mc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[289];
-  double Children[578];
-  double CutPoint[289];
-  bool NanCutPoints[289];
-  bool InfCutPoints[289];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5202];
-};
-
 class nc_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[275];
-  double Children[550];
-  double CutPoint[275];
-  bool NanCutPoints[275];
-  bool InfCutPoints[275];
+  double predict(const double Xin[270], double scores[18]) const;
+  void b_init();
+  double CutPredictorIndex[283];
+  double Children[566];
+  double CutPoint[283];
+  bool NanCutPoints[283];
+  bool InfCutPoints[283];
   int ClassNamesLength[18];
   coderutils::Transform ScoreTransform;
   double Prior[18];
   bool ClassLogicalIndices[18];
   double Cost[324];
-  double ClassProbability[4950];
+  double ClassProbability[5094];
 };
 
 class oc_CompactClassificationTree {
 public:
   void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  void b_init();
-  void c_init();
-  double CutPredictorIndex[293];
-  double Children[586];
-  double CutPoint[293];
-  bool NanCutPoints[293];
-  bool InfCutPoints[293];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[5274];
-};
-
-class pc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[405];
-  double Children[810];
-  double CutPoint[405];
-  bool NanCutPoints[405];
-  bool InfCutPoints[405];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7290];
-};
-
-class qc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
-  double CutPredictorIndex[429];
-  double Children[858];
-  double CutPoint[429];
-  bool NanCutPoints[429];
-  bool InfCutPoints[429];
-  int ClassNamesLength[18];
-  coderutils::Transform ScoreTransform;
-  double Prior[18];
-  bool ClassLogicalIndices[18];
-  double Cost[324];
-  double ClassProbability[7722];
-};
-
-class rc_CompactClassificationTree {
-public:
-  void init();
-  double predict(const double Xin[280], double scores[18]) const;
+  double predict(const double Xin[270], double scores[18]) const;
   double CutPredictorIndex[281];
   double Children[562];
   double CutPoint[281];
@@ -2109,6 +2059,40 @@ public:
   bool ClassLogicalIndices[18];
   double Cost[324];
   double ClassProbability[5058];
+};
+
+class pc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  double CutPredictorIndex[287];
+  double Children[574];
+  double CutPoint[287];
+  bool NanCutPoints[287];
+  bool InfCutPoints[287];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[5166];
+};
+
+class qc_CompactClassificationTree {
+public:
+  void init();
+  double predict(const double Xin[270], double scores[18]) const;
+  double CutPredictorIndex[429];
+  double Children[858];
+  double CutPoint[429];
+  bool NanCutPoints[429];
+  bool InfCutPoints[429];
+  int ClassNamesLength[18];
+  coderutils::Transform ScoreTransform;
+  double Prior[18];
+  bool ClassLogicalIndices[18];
+  double Cost[324];
+  double ClassProbability[7722];
 };
 
 } // namespace classif

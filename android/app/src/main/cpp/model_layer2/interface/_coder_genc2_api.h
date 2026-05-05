@@ -5,7 +5,7 @@
 // File: _coder_genc2_api.h
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 #ifndef _CODER_GENC2_API_H
@@ -23,7 +23,7 @@ extern emlrtCTX emlrtRootTLSGlobal;
 extern emlrtContext emlrtContextGlobal;
 
 // Function Declarations
-real_T genc2(real_T X_s2[280]);
+real_T genc2(real_T X_s2[270]);
 
 void genc2_api(const mxArray *prhs, const mxArray **plhs);
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import '../models/app_models.dart';
-
+import '../services/rehab_pipeline.dart';
 import '../services/native_service.dart';
 import '../services/feature_service.dart';
 import '../services/data_processor.dart';
@@ -104,9 +104,12 @@ class _RecordPageState extends State<RecordPage> {
           List<double> vals = [aX, aY, aZ, gX, gY, gZ, qW, qX, qY, qZ];
           _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: ts, values: vals));
 
-          // 維持 Buffer 最大長度
-          if (_rawBuffers[prefix]!.length > _maxBufferSize) {
-            _rawBuffers[prefix]!.removeAt(0);
+          // 💡 修正：只有在「非錄製狀態」才限制 300 筆 (為了讓波形圖能動)。
+          // 只要進入錄製狀態，就讓它無限收集整段復健資料！
+          if (_currentState != RecordState.recording) {
+            if (_rawBuffers[prefix]!.length > _maxBufferSize) {
+              _rawBuffers[prefix]!.removeAt(0);
+            }
           }
 
           // 3. 處理 UI 畫圖陣列 (保留你原本更新波形圖的功能)
@@ -199,6 +202,12 @@ class _RecordPageState extends State<RecordPage> {
       _currentState = RecordState.recording;
       _recordingSeconds = 0;
       // 注意：這裡不用再清空 _recordingBuffer，也不用啟動 aiSampleTimer 了
+
+      // 💡 [關鍵新增]：徹底清空 5 顆感測器的歷史資料！
+      // 確保病患的資料是從「按下這瞬間」才開始純淨收集
+      for (String sensor in orderedSensors) {
+        _rawBuffers[sensor]!.clear();
+      }
     });
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -206,98 +215,55 @@ class _RecordPageState extends State<RecordPage> {
     });
   }
 
-  void _stopRecording() {
+  void _stopRecording() async {
     _recordingTimer?.cancel();
-    // 提醒：別忘了也要去 dispose() 裡面把 _aiSampleTimer?.cancel() 刪掉
-
     setState(() => _currentState = RecordState.completed);
 
-    // 1. 檢查 5 個 Buffer 是否都有收到足夠的資料
-    bool hasEnoughData = true;
-    int earliestEndTime = 0;
-
+    // 1. 找出 5 顆感測器的共同重疊時間 (跟上一則回覆一樣)
+    int maxStartTime = 0;
+    int minEndTime = -1;
     for (String sensor in orderedSensors) {
-      if (_rawBuffers[sensor]!.isEmpty) {
-        hasEnoughData = false;
-        break;
-      }
-      // 找出這 5 顆感測器中，「最晚抵達」的那筆時間戳
-      // 我們取最小值，確保這個 T_end 是 5 顆感測器共同擁有的時間點
-      int currentLastTs = _rawBuffers[sensor]!.last.timestamp;
-      if (earliestEndTime == 0 || currentLastTs < earliestEndTime) {
-        earliestEndTime = currentLastTs;
-      }
+      if (_rawBuffers[sensor]!.isEmpty) return;
+      int firstTs = _rawBuffers[sensor]!.first.timestamp;
+      int lastTs = _rawBuffers[sensor]!.last.timestamp;
+      if (firstTs > maxStartTime) maxStartTime = firstTs;
+      if (minEndTime == -1 || lastTs < minEndTime) minEndTime = lastTs;
     }
 
-    if (!hasEnoughData || earliestEndTime == 0) {
-      _showTopSnackBar('⚠️ 收集資料不足，請確認藍牙連線後重新錄製', color: Colors.orange);
+    double totalDurationMs = (minEndTime - maxStartTime).toDouble();
+    if (totalDurationMs < 2000) {
+      _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒)', color: Colors.orange);
       return;
     }
 
-    // 2. 準備裁切：定義 128Hz 的時間軸
-    double interval = 1000.0 / 128.0; // 7.8125 ms
-    double targetDuration = 256 * interval; // 約 2000 ms
+    // 2. 建立 Pipeline 引擎並初始化
+    final pipeline = RehabPipeline();
+    pipeline.initPipeline();
 
-    // 從共同的終點往回推算起點
-    double tStart = earliestEndTime - targetDuration;
+    // 3. 以 60Hz 重新對齊，並直接一筆一筆「餵給」 Pipeline
+    double interval = 1000.0 / 60.0; // 60Hz
+    int totalPoints = (totalDurationMs / interval).floor();
+    List<double>? lastValidFrame; // 用來處理掉包的 ZOH (Zero-Order Hold)
 
-    // 3. 發動 DataProcessor 引擎，產生完美的 256 幀！
-    List<List<double>> perfectWindowData = [];
-
-    for (int i = 0; i < 256; i++) {
-      double targetT = tStart + (i * interval);
-
-      // 呼叫你的演算法抽出單一幀 (包含 50 軸)
+    for (int i = 0; i < totalPoints; i++) {
+      double targetT = maxStartTime + (i * interval);
       List<double>? frame = DataProcessor.extractSingleFrame50Axes(_rawBuffers, targetT);
 
       if (frame != null) {
-        perfectWindowData.add(frame);
-      } else {
-        // 如果算不出 frame，代表你的錄製時間太短，Buffer 裡找不到 targetT 左邊的鄰居
-        _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒) 或是嚴重掉包，無法對齊特徵', color: Colors.orange);
-        return;
+        lastValidFrame = frame;
+        pipeline.feedData(frame); // 🚀 直接餵給 Pipeline！
+      } else if (lastValidFrame != null) {
+        pipeline.feedData(lastValidFrame); // 掉包就拿上一筆頂替
       }
     }
 
-    _showTopSnackBar('⏹️ 錄製結束！成功產生 ${perfectWindowData.length} 筆完美對齊資料', color: Colors.blue);
+    // 4. 所有資料餵完了，請 Pipeline 生成最終報告 (包含正規化、濾波)
+    _showTopSnackBar('⏳ 分析中，請稍候...');
+    List<int> finalPredictions = await pipeline.finishAndGenerateReport();
 
-    // 4. 將最完美的資料送進 AI 推論
-    try {
-      List<double> extractedFeatures = _featureService.extractFeatures(perfectWindowData);
-      int predictedActionId = _nativeService.predictRealAction(extractedFeatures);
-
-      // 💡 建立 ID 與動作名稱的對應字典 (Label Map)
-      final Map<int, String> actionMap = {
-        0:  "無動作 (靜止)",
-        1:  "左側前平舉",
-        2:  "左側側平舉",
-        3:  "左側後平舉",
-        4:  "左側水平外展",
-        5:  "左側水平內收",
-        6:  "左側前向肩輪(順)",
-        7:  "左側前向肩輪(逆)",
-        8:  "左側側向肩輪(順)",
-        9:  "左側側向肩輪(逆)",
-        10:  "右側前平舉",
-        11:  "右側側平舉",
-        12:  "右側後平舉",
-        13:  "右側水平外展",
-        14:  "右側水平內收",
-        15:  "右側前向肩輪(順)",
-        16:  "右側前向肩輪(逆)",
-        17:  "右側側向肩輪(順)",
-        18:  "右側側向肩輪(逆)",
-      };
-
-      // 利用字典查詢動作名稱。如果查不到 (例如模型吐出 99)，就顯示 "未知動作 (ID: 99)" 方便除錯
-      String actionName = actionMap[predictedActionId] ?? "未知動作 (ID: $predictedActionId)";
-
-      // 顯示最終結果
-      _showTopSnackBar('✅ 分析完成！判定動作為：$actionName');
-
-    } catch (e) {
-      _showTopSnackBar('❌ 分析失敗: $e', color: Colors.red);
-    }
+    // 5. 處理結果 (例如計算動作次數、顯示給醫師看)
+    print("🎯 最終動作序列長度: ${finalPredictions.length}");
+    _showTopSnackBar('✅ 分析完成！');
   }
 
   void _exportCSV() async { _showTopSnackBar('💾 成功匯出檔案至本機！', color: Colors.blue); }

@@ -5,7 +5,7 @@
 // File: CompactClassificationEnsemble.cpp
 //
 // MATLAB Coder version            : 25.2
-// C/C++ source code generated on  : 11-Apr-2026 09:59:25
+// C/C++ source code generated on  : 05-May-2026 15:02:36
 //
 
 // Include Files
@@ -30,12 +30,12 @@ namespace classif {
 void CompactClassificationEnsemble::init()
 {
   static const double dv[18]{
-      0.060906757912745919, 0.062617621899059,    0.047733105218135147,
-      0.057485029940119746, 0.052181351582549176, 0.055260906757912731,
-      0.057998289136013674, 0.0564585115483319,   0.054918733960650112,
-      0.0564585115483319,   0.060735671514114617, 0.046364414029084679,
-      0.057142857142857127, 0.052181351582549176, 0.060393498716852,
-      0.054234388366124882, 0.051668092386655248, 0.055260906757912731};
+      0.060694135749700812, 0.0629167379039152,   0.047871431013848526,
+      0.057445717216618231, 0.052487604718755347, 0.055052145665925804,
+      0.057787656009574292, 0.056419900837750052, 0.054881176269447773,
+      0.056248931441272021, 0.060865105146178843, 0.046332706445546254,
+      0.057103778423662169, 0.052316635322277316, 0.06035219695674475,
+      0.054197298683535657, 0.05180372713284323,  0.055223115062403835};
   for (int i{0}; i < 18; i++) {
     ClassNamesLength[i] = 1;
     ClassLogicalIndices[i] = true;
@@ -52,10 +52,10 @@ void CompactClassificationEnsemble::init()
 }
 
 //
-// Arguments    : const double Xin[280]
+// Arguments    : const double Xin[270]
 // Return Type  : double
 //
-double CompactClassificationEnsemble::predict(const double Xin[280]) const
+double CompactClassificationEnsemble::predict(const double Xin[270]) const
 {
   double scoreIn[18];
   double labels;
