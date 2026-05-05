@@ -7,11 +7,17 @@ import '../services/native_service.dart';
 import '../services/feature_service.dart';
 import '../services/data_processor.dart';
 
+import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
 enum RecordState { initial, calibrated, recording, completed }
 
 class RecordPage extends StatefulWidget {
   final List<Sensor> sensors;
   final bool isSynced;
+  final String userId; // 👈 1. 新增這行接收 userId
   final Function(int) onSwitchTab;
   final Function(AssessmentReport) onAnalysisCompleted;
 
@@ -19,6 +25,7 @@ class RecordPage extends StatefulWidget {
     super.key,
     required this.sensors,
     required this.isSynced,
+    required this.userId, // 👈 2. 新增這行規定必填
     required this.onSwitchTab,
     required this.onAnalysisCompleted,
   });
@@ -266,7 +273,71 @@ class _RecordPageState extends State<RecordPage> {
     _showTopSnackBar('✅ 分析完成！');
   }
 
-  void _exportCSV() async { _showTopSnackBar('💾 成功匯出檔案至本機！', color: Colors.blue); }
+  // 貼上新的 _exportCSV
+  Future<void> _exportCSV() async {
+    _showTopSnackBar('⏳ 正在準備資料，請稍候...');
+
+    try {
+      // 1. 建立 CSV 的標題列 (Header)
+      List<List<dynamic>> csvData = [
+        ['Sensor', 'Timestamp', 'AccX', 'AccY', 'AccZ', 'GyrX', 'GyrY', 'GyrZ', 'QuatW', 'QuatX', 'QuatY', 'QuatZ']
+      ];
+
+      // 2. 遍歷所有的感測器 (LFA, RFA, LA, RA, W)，把資料展開成一行一行
+      for (String sensor in orderedSensors) {
+        final points = _rawBuffers[sensor] ?? [];
+        for (var point in points) {
+          // 防呆：確保 values 裡面真的有 10 個值
+          if (point.values.length >= 10) {
+            csvData.add([
+              sensor,             // 感測器位置標籤
+              point.timestamp,    // 時間戳
+              point.values[0],    // AccX
+              point.values[1],    // AccY
+              point.values[2],    // AccZ
+              point.values[3],    // GyrX
+              point.values[4],    // GyrY
+              point.values[5],    // GyrZ
+              point.values[6],    // QuatW
+              point.values[7],    // QuatX
+              point.values[8],    // QuatY
+              point.values[9],    // QuatZ
+            ]);
+          }
+        }
+      }
+
+      // 如果 Buffer 是空的，提早結束
+      if (csvData.length <= 1) {
+        _showTopSnackBar('⚠️ 沒有收集到任何資料可以匯出', color: Colors.orange);
+        return;
+      }
+
+      final converter = const ListToCsvConverter();
+      String csvString = converter.convert(csvData);
+
+      // 4. 取得手機暫存資料夾路徑
+      final directory = await getTemporaryDirectory();
+
+      // 產生帶有時間戳記的檔名，避免覆蓋
+      final now = DateTime.now();
+      final fileName = 'raw_data_${now.hour}${now.minute}${now.second}.csv';
+      final String filePath = '${directory.path}/$fileName';
+
+      // 5. 將字串寫入實體檔案
+      final File file = File(filePath);
+      await file.writeAsString(csvString);
+
+      // 6. 呼叫原生的「分享」選單，把檔案傳到電腦
+      await Share.shareXFiles([XFile(filePath)], text: '這是我剛剛錄製的感測器資料');
+
+      _showTopSnackBar('✅ 成功產生檔案！請選擇傳送方式。', color: Colors.blue);
+
+    } catch (e) {
+      print("❌ 匯出 CSV 失敗: $e");
+      _showTopSnackBar('❌ 匯出失敗，請檢查權限', color: Colors.red);
+    }
+  }
 
   void _deleteData() {
     setState(() { _currentState = RecordState.initial; _recordingSeconds = 0; });
@@ -284,6 +355,7 @@ class _RecordPageState extends State<RecordPage> {
     }).toList();
 
     widget.onAnalysisCompleted(AssessmentReport(
+      userId: widget.userId, // 👈 新增這行，把從上面接到的 userId 傳進來
       fullDate: '${now.year}/${now.month}/${now.day}',
       time: '${now.hour}:${now.minute}',
       totalTime: _formattedTime,
