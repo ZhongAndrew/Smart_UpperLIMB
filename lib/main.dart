@@ -36,6 +36,16 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0D9488)),
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       ),
+      // 👇 加入以下這段「多國語系設定」👇
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('zh', 'TW'), // 繁體中文 (台灣)
+        Locale('en', 'US'), // 英文 (美國) 作為備用
+      ],
       // 啟動後直接進入登入頁面
       home: const LoginPage(),
     );

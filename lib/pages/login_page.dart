@@ -1,3 +1,4 @@
+import 'forgot_password_page.dart';
 import 'package:flutter/material.dart';
 import 'main_system.dart';
 import 'profile_setup_page.dart';
@@ -142,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
+//陳 大狀 手痛
   void _fillTestAccount() {
     setState(() {
       _accountController.text = 'doctor3@example.com';
@@ -247,6 +248,23 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ],
+
+                        // 👇 加入這段忘記密碼按鈕 👇
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                              );
+                            },
+                            child: const Text(
+                              '忘記密碼？',
+                              style: TextStyle(color: Color(0xFF0D9488), fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
 
                         if (isLoginMode)
                           Align(
