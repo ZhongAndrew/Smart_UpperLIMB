@@ -34,7 +34,7 @@ class FeatureService {
     }
   }
 
-  /// 傳入 120x50 的原始感測器資料，呼叫 C++ 瞬間算出 280 個特徵
+  /// 傳入 120x50 的原始感測器資料，呼叫 C++ 瞬間算出 270 個特徵
   List<double> extractFeatures(List<List<double>> windowData) {
     if (!_isInitialized) init();
 

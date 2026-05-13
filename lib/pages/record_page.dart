@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
+import 'dart:convert'; // 💡 新增
 import '../models/app_models.dart';
 import '../services/rehab_pipeline.dart';
 import '../services/native_service.dart';
@@ -59,6 +60,8 @@ class _RecordPageState extends State<RecordPage> {
   int _currentSensorIndex = 0;
   RecordState _currentState = RecordState.initial;
   int _recordingSeconds = 0;
+  bool _isAnalyzing = false; // 💡 新增：分析中的狀態
+  AssessmentReport? _finalReport; // 💡 新增：儲存分析後的真實報告
 
   Timer? _recordingTimer;
   Timer? _aiSampleTimer;
@@ -224,13 +227,54 @@ class _RecordPageState extends State<RecordPage> {
 
   void _stopRecording() async {
     _recordingTimer?.cancel();
-    setState(() => _currentState = RecordState.completed);
+    setState(() {
+      _currentState = RecordState.completed;
+      _isAnalyzing = true;
+    });
 
-    // 1. 找出 5 顆感測器的共同重疊時間 (跟上一則回覆一樣)
+    // ---------------------------------------------------------
+    // 🧪 [測試邏輯] 這裡可以切換使用真實資料或 test.csv
+    // 之後移除時，只需將整個 if (true) 塊刪除，保留原本的 Pipeline 餵資料邏輯即可
+    if (true) { 
+      _showTopSnackBar('🧪 測試模式：正在從 test.csv 載入資料...');
+      try {
+        final pipeline = RehabPipeline();
+        pipeline.initPipeline();
+        
+        final String csvString = await DefaultAssetBundle.of(context).loadString('assets/test.csv');
+        List<String> lines = const LineSplitter().convert(csvString);
+        
+        int lineCount = 0;
+        for (String line in lines) {
+          if (line.trim().isEmpty) continue;
+          List<double> row = line.split(',').map((s) => double.tryParse(s.trim()) ?? 0.0).toList();
+          if (row.length >= 50) {
+            pipeline.feedData(row.sublist(0, 50));
+          }
+          
+          lineCount++;
+          if (lineCount % 100 == 0) {
+            await Future.delayed(Duration.zero);
+          }
+        }
+        _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
+        setState(() => _isAnalyzing = false);
+        _showTopSnackBar('✅ 測試資料分析完成！');
+        return; // 結束，跳過下方的真實資料處理
+      } catch (e) {
+        print("❌ 測試資料載入失敗: $e");
+      }
+    }
+    // ---------------------------------------------------------
+
+    // 1. 找出 5 顆感測器的共同重疊時間
     int maxStartTime = 0;
     int minEndTime = -1;
     for (String sensor in orderedSensors) {
-      if (_rawBuffers[sensor]!.isEmpty) return;
+      if (_rawBuffers[sensor]!.isEmpty) {
+        setState(() => _isAnalyzing = false);
+        return;
+      }
       int firstTs = _rawBuffers[sensor]!.first.timestamp;
       int lastTs = _rawBuffers[sensor]!.last.timestamp;
       if (firstTs > maxStartTime) maxStartTime = firstTs;
@@ -240,6 +284,7 @@ class _RecordPageState extends State<RecordPage> {
     double totalDurationMs = (minEndTime - maxStartTime).toDouble();
     if (totalDurationMs < 2000) {
       _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒)', color: Colors.orange);
+      setState(() => _isAnalyzing = false);
       return;
     }
 
@@ -250,7 +295,7 @@ class _RecordPageState extends State<RecordPage> {
     // 3. 以 60Hz 重新對齊，並直接一筆一筆「餵給」 Pipeline
     double interval = 1000.0 / 60.0; // 60Hz
     int totalPoints = (totalDurationMs / interval).floor();
-    List<double>? lastValidFrame; // 用來處理掉包的 ZOH (Zero-Order Hold)
+    List<double>? lastValidFrame;
 
     for (int i = 0; i < totalPoints; i++) {
       double targetT = maxStartTime + (i * interval);
@@ -258,18 +303,17 @@ class _RecordPageState extends State<RecordPage> {
 
       if (frame != null) {
         lastValidFrame = frame;
-        pipeline.feedData(frame); // 🚀 直接餵給 Pipeline！
+        pipeline.feedData(frame);
       } else if (lastValidFrame != null) {
-        pipeline.feedData(lastValidFrame); // 掉包就拿上一筆頂替
+        pipeline.feedData(lastValidFrame);
       }
     }
 
-    // 4. 所有資料餵完了，請 Pipeline 生成最終報告 (包含正規化、濾波)
+    // 4. 所有資料餵完了，請 Pipeline 生成最終報告
     _showTopSnackBar('⏳ 分析中，請稍候...');
-    List<int> finalPredictions = await pipeline.finishAndGenerateReport();
+    _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
 
-    // 5. 處理結果 (例如計算動作次數、顯示給醫師看)
-    print("🎯 最終動作序列長度: ${finalPredictions.length}");
+    setState(() => _isAnalyzing = false);
     _showTopSnackBar('✅ 分析完成！');
   }
 
@@ -386,23 +430,12 @@ class _RecordPageState extends State<RecordPage> {
   }
 
   void _showAnalysisDialog() {
-    final now = DateTime.now();
-    List<ExerciseResult> fullFakeResults = ['前平舉', '側平舉', '後平舉'].map((exName) {
-      return ExerciseResult(
-          name: exName, type: 'standard',
-          left: List.generate(3, (i) => RepData(rep: i + 1, start: 0, end: 155, rom: 155)),
-          right: List.generate(3, (i) => RepData(rep: i + 1, start: 0, end: 140, rom: 140))
-      );
-    }).toList();
-
-    widget.onAnalysisCompleted(AssessmentReport(
-      userId: widget.userId, // 👈 新增這行，把從上面接到的 userId 傳進來
-      fullDate: '${now.year}/${now.month}/${now.day}',
-      time: '${now.hour}:${now.minute}',
-      totalTime: _formattedTime,
-      results: fullFakeResults,
-    ));
-    _showTopSnackBar('📊 分析完成！');
+    if (_finalReport == null) {
+      _showTopSnackBar('⚠️ 尚無分析資料', color: Colors.orange);
+      return;
+    }
+    widget.onAnalysisCompleted(_finalReport!);
+    _showTopSnackBar('📊 分析報告已生成');
   }
 
   String get _formattedTime => '${(_recordingSeconds ~/ 60).toString().padLeft(2, '0')} : ${(_recordingSeconds % 60).toString().padLeft(2, '0')}';
@@ -510,7 +543,14 @@ class _RecordPageState extends State<RecordPage> {
             const SizedBox(width: 8),
             ElevatedButton.icon(onPressed: _exportCSV, icon: const Icon(Icons.download_rounded, size: 18), label: const Text('匯出')),
             const SizedBox(width: 8),
-            ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white), onPressed: _showAnalysisDialog, icon: const Icon(Icons.analytics_outlined, size: 18), label: const Text('分析')),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white),
+              onPressed: _isAnalyzing ? null : _showAnalysisDialog,
+              icon: _isAnalyzing 
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.analytics_outlined, size: 18),
+              label: Text(_isAnalyzing ? '分析中...' : '分析'),
+            ),
           ],
         );
     }
