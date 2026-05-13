@@ -76,6 +76,13 @@ class NativeService {
     }
   }
 
+  Future<void> stopFreeMeasure() async {
+    try {
+      await _controlChannel.invokeMethod('stopFreeMeasure'); // ✅ 改成 _controlChannel
+    } on PlatformException catch (e) {
+      print("Failed to stop measure: '${e.message}'.");
+    }
+  }
   void init() {
     if (_isInitialized) return;
     try {

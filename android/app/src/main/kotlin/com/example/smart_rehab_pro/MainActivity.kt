@@ -155,6 +155,13 @@ class MainActivity: FlutterActivity(),
                         }
                         result.success("直通模式已啟動")
                     }
+                    // 👇 加上這段：停止接收資料 👇
+                    "stopFreeMeasure" -> {
+                        for (device in connectedDevices.values) {
+                            device.stopMeasuring()
+                        }
+                        result.success("測量已停止")
+                    }
                     else -> result.notImplemented()
                 }
             }

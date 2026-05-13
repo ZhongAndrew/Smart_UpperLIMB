@@ -106,14 +106,16 @@ class _DashboardPageState extends State<DashboardPage> {
     int connectedCount = widget.sensors.where((s) => s.isConnected).length;
 
     if (connectedCount < 1) {
-      _showTopSnackBar('⚠️ 請至少連線 1 顆感測器', color: Colors.orange);
+      _showTopSnackBar('⚠️ 請至少連線 2 顆感測器', color: Colors.orange);
       return;
     }
 
+    // 💡 關鍵修改：如果是已同步狀態，按下去就「停止感測器」！
     if (widget.isSynced) {
-      widget.onSyncStatusChanged(false);
+      await _nativeService.stopFreeMeasure(); // 👈 呼叫底層，讓水龍頭關掉
+      widget.onSyncStatusChanged(false);      // 👈 狀態變回未同步
       widget.onStateChanged();
-      _showTopSnackBar('已解除，若要錄製請重新執行', color: Colors.grey.shade700);
+      _showTopSnackBar('⏹️ 已停止感測器傳輸資料', color: Colors.grey.shade700);
       return;
     }
 
@@ -419,10 +421,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(widget.isSynced ? Icons.check_circle : Icons.sync_rounded,
-                          color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488), size: 20),
+                      // 圖示可以換成停止的 icon
+                      Icon(widget.isSynced ? Icons.stop_circle_rounded : Icons.sync_rounded,
+                          color: widget.isSynced ? const Color(0xFFEF4444) : const Color(0xFF0D9488), size: 20),
                       const SizedBox(width: 8),
-                      Text(widget.isSynced ? '解除同步' : '執行同步',
+                      Text(widget.isSynced ? '停止接收' : '執行同步',
                           style: TextStyle(fontWeight: FontWeight.bold, color: widget.isSynced ? const Color(0xFF10B981) : const Color(0xFF0D9488), fontSize: 14)),
                     ],
                   ),
