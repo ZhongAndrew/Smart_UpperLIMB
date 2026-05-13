@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 💡 1. 新增這行：匯入系統服務，用來控制螢幕方向
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'pages/login_page.dart';
 import 'services/native_service.dart';
 import 'package:smart_rehab_pro/tests/mock_bluetooth_tester.dart';
 
-void main() async{
+void main() async {
+  // 確保 Flutter 底層引擎已經準備好
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 💡 2. 新增這段：強制將螢幕鎖定為「正向直立」
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
 
   try {
     NativeService().init();
@@ -19,6 +26,8 @@ void main() async{
 
   // 執行我們上一回合寫的虛擬藍牙發射器
   await MockBluetoothTester.runTest(testFilePath);
+
+  // 正式啟動 App
   runApp(const MyApp());
 }
 
