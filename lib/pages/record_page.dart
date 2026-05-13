@@ -273,69 +273,110 @@ class _RecordPageState extends State<RecordPage> {
     _showTopSnackBar('✅ 分析完成！');
   }
 
-  // 貼上新的 _exportCSV
+// 🌟 終極版：相對時間對齊 + 60Hz 零階保持重採樣 + 橫向寬格式
   Future<void> _exportCSV() async {
-    _showTopSnackBar('⏳ 正在準備資料，請稍候...');
+    _showTopSnackBar('⏳ 正在執行相對時間對齊與重採樣...');
+    await Future.delayed(const Duration(milliseconds: 100)); // 防 ANR
 
     try {
-      // 1. 建立 CSV 的標題列 (Header)
-      List<List<dynamic>> csvData = [
-        ['Sensor', 'Timestamp', 'AccX', 'AccY', 'AccZ', 'GyrX', 'GyrY', 'GyrZ', 'QuatW', 'QuatX', 'QuatY', 'QuatZ']
-      ];
-
-      // 2. 遍歷所有的感測器 (LFA, RFA, LA, RA, W)，把資料展開成一行一行
-      for (String sensor in orderedSensors) {
-        final points = _rawBuffers[sensor] ?? [];
-        for (var point in points) {
-          // 防呆：確保 values 裡面真的有 10 個值
-          if (point.values.length >= 10) {
-            csvData.add([
-              sensor,             // 感測器位置標籤
-              point.timestamp,    // 時間戳
-              point.values[0],    // AccX
-              point.values[1],    // AccY
-              point.values[2],    // AccZ
-              point.values[3],    // GyrX
-              point.values[4],    // GyrY
-              point.values[5],    // GyrZ
-              point.values[6],    // QuatW
-              point.values[7],    // QuatX
-              point.values[8],    // QuatY
-              point.values[9],    // QuatZ
-            ]);
-          }
-        }
-      }
-
-      // 如果 Buffer 是空的，提早結束
-      if (csvData.length <= 1) {
-        _showTopSnackBar('⚠️ 沒有收集到任何資料可以匯出', color: Colors.orange);
+      // 1. 防呆：確保 5 顆感測器都有收到資料
+      List<String> missingSensors = orderedSensors.where((s) => (_rawBuffers[s] ?? []).isEmpty).toList();
+      if (missingSensors.isNotEmpty) {
+        _showTopSnackBar('⚠️ 缺少感測器資料: ${missingSensors.join(", ")}', color: Colors.orange);
         return;
       }
 
+      // 2. 建立「相對時間」的基準點
+      // 自動判斷時間戳單位：看看第一筆和第二筆的差值，如果是 16000 左右就是微秒，16 左右就是毫秒
+      int sampleDelta = _rawBuffers[orderedSensors.first]![1].timestamp - _rawBuffers[orderedSensors.first]![0].timestamp;
+      double timeScale = (sampleDelta > 1000) ? 1000.0 : 1.0;
+
+      Map<String, int> startTimes = {};
+      double minDurationMs = double.infinity;
+
+      for (String sensor in orderedSensors) {
+        int startTs = _rawBuffers[sensor]!.first.timestamp;
+        int endTs = _rawBuffers[sensor]!.last.timestamp;
+        startTimes[sensor] = startTs; // 📌 記住每顆感測器自己的「第 0 秒」基準點
+
+        double durationMs = (endTs - startTs) / timeScale;
+        if (durationMs < minDurationMs) minDurationMs = durationMs;
+      }
+
+      if (minDurationMs < 2000) {
+        _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒)', color: Colors.orange);
+        return;
+      }
+
+      // 3. 建立 51 欄的橫向標題列 (1 個相對時間 + 5顆 * 10軸)
+      List<dynamic> headerRow = ['Time_ms'];
+      for (String sensor in orderedSensors) {
+        headerRow.addAll([
+          '${sensor}_AccX', '${sensor}_AccY', '${sensor}_AccZ',
+          '${sensor}_GyrX', '${sensor}_GyrY', '${sensor}_GyrZ',
+          '${sensor}_QuatW', '${sensor}_QuatX', '${sensor}_QuatY', '${sensor}_QuatZ'
+        ]);
+      }
+      List<List<dynamic>> csvData = [headerRow];
+
+      // 4. 開始 60Hz 完美重採樣 (Re-sampling)
+      double intervalMs = 1000.0 / 60.0; // 每 16.666 毫秒切一刀
+      int totalFrames = (minDurationMs / intervalMs).floor();
+
+      // 紀錄每顆感測器目前找到哪一筆了，加速搜尋
+      Map<String, int> searchIndices = { for (var s in orderedSensors) s: 0 };
+
+      for (int frame = 0; frame < totalFrames; frame++) {
+        double targetTimeMs = frame * intervalMs; // 虛擬的完美時鐘：0.00, 16.67, 33.33...
+        List<dynamic> rowData = [targetTimeMs.toStringAsFixed(2)]; // 第 1 欄寫入時間戳
+
+        // 🔄 橫向組裝 5 顆感測器
+        for (String sensor in orderedSensors) {
+          var buffer = _rawBuffers[sensor]!;
+          int startTs = startTimes[sensor]!;
+          int idx = searchIndices[sensor]!;
+
+          // 🧠 零階保持 (Zero-Order Hold) 邏輯：
+          // 向前找，直到感測器的「相對時間」超過我們的目標時間為止
+          while (idx < buffer.length - 1) {
+            double nextTimeMs = (buffer[idx + 1].timestamp - startTs) / timeScale;
+            if (nextTimeMs <= targetTimeMs) {
+              idx++; // 繼續往前推進
+            } else {
+              break; // 找到了最接近 (且不超過) 目標時間的那一筆資料，停止推進
+            }
+          }
+          searchIndices[sensor] = idx; // 存檔，下次從這裡繼續找
+
+          // 將這顆感測器沿用(保持)的 10 個值加到同一列 (橫向排過去)
+          rowData.addAll(buffer[idx].values);
+        }
+
+        // 將這完美橫向對齊的 51 個數據寫入 CSV
+        csvData.add(rowData);
+
+        // 防 ANR 暫停
+        if (frame % 60 == 0) await Future.delayed(Duration.zero);
+      }
+
+      // 5. 匯出 CSV 檔案
       final converter = const ListToCsvConverter();
       String csvString = converter.convert(csvData);
 
-      // 4. 取得手機暫存資料夾路徑
       final directory = await getTemporaryDirectory();
-
-      // 產生帶有時間戳記的檔名，避免覆蓋
       final now = DateTime.now();
-      final fileName = 'raw_data_${now.hour}${now.minute}${now.second}.csv';
+      final fileName = 'aligned_relative_${now.hour}${now.minute}${now.second}.csv';
       final String filePath = '${directory.path}/$fileName';
 
-      // 5. 將字串寫入實體檔案
       final File file = File(filePath);
       await file.writeAsString(csvString);
+      await Share.shareXFiles([XFile(filePath)], text: '相對時間對齊版：60Hz 橫向感測器資料');
 
-      // 6. 呼叫原生的「分享」選單，把檔案傳到電腦
-      await Share.shareXFiles([XFile(filePath)], text: '這是我剛剛錄製的感測器資料');
-
-      _showTopSnackBar('✅ 成功產生檔案！請選擇傳送方式。', color: Colors.blue);
+      _showTopSnackBar('✅ 成功匯出相對時間對齊版 CSV！', color: Colors.blue);
 
     } catch (e) {
       print("❌ 匯出 CSV 失敗: $e");
-      _showTopSnackBar('❌ 匯出失敗，請檢查權限', color: Colors.red);
+      _showTopSnackBar('❌ 匯出失敗', color: Colors.red);
     }
   }
 
