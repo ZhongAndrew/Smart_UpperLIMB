@@ -293,87 +293,33 @@ class PostAnalyzer {
     return result;
   }
 
-  List<int> mergeShortSegments(List<int> labels, int threshold) {
-    if (labels.isEmpty) return labels;
+  List<int> mergeShortSegments(List<int> predictions, int threshold) {
+    // 1. 安全檢查：如果輸入是空的，直接回傳空清單
+    if (predictions.isEmpty) return [];
 
-    // 1. 找出所有動作片段 (Run-Length Encoding)
-    List<int> values = [];
-    List<int> durations = [];
+    // 複製一份資料，避免更動原始數據
+    List<int> cleaned = List.from(predictions);
+    int n = cleaned.length;
 
-    int currVal = labels[0];
-    int count = 1;
+    int i = 0;
+    while (i < n) {
+      int currentLabel = cleaned[i];
+      int start = i;
 
-    for (int i = 1; i < labels.length; i++) {
-      if (labels[i] == currVal) {
-        count++;
-      } else {
-        values.add(currVal);
-        durations.add(count);
-        currVal = labels[i];
-        count = 1;
-      }
-    }
-    values.add(currVal);
-    durations.add(count);
-
-    // 2. 迭代處理過短的片段
-    bool hasChanged = true;
-    while (hasChanged) {
-      hasChanged = false;
-      if (values.length <= 1) break;
-
-      List<int> newValues = [];
-      List<int> newDurations = [];
-
-      int i = 0;
-      while (i < values.length) {
-        int cVal = values[i];
-        int cDur = durations[i];
-
-        if (cDur < threshold) {
-          hasChanged = true;
-
-          if (i > 0 && i < values.length - 1) {
-            // 夾在中間：直接併給前一個
-            newDurations[newDurations.length - 1] += cDur;
-
-            // 如果合併後，前一個跟後一個數值一樣了，要把後一個也併進來
-            if (i < values.length - 1 && newValues.last == values[i + 1]) {
-              newDurations[newDurations.length - 1] += durations[i + 1];
-              i++; // 跳過下一個
-            }
-          } else if (i == 0) {
-            // 第一段太短：併給下一段
-            values[i + 1] = values[i + 1]; // 保持下一個的值
-            durations[i + 1] += cDur;
-          } else {
-            // 最後一段太短：併給前一段
-            newDurations[newDurations.length - 1] += cDur;
-          }
-        } else {
-          // 足夠長，保留
-          newValues.add(cVal);
-          newDurations.add(cDur);
-        }
+      // 2. 找出連續相同標籤的區間
+      while (i < n && cleaned[i] == currentLabel) {
         i++;
       }
-      values = newValues;
-      durations = newDurations;
-    }
+      int segmentLength = i - start;
 
-    // 3. 還原成原始長度的陣列 (Decoding)
-    List<int> finalLabels = List.filled(labels.length, 0);
-    int idx = 0;
-    for (int k = 0; k < values.length; k++) {
-      int len = durations[k];
-      for (int j = 0; j < len; j++) {
-        if (idx + j < finalLabels.length) {
-          finalLabels[idx + j] = values[k];
+      // 3. 如果片段長度小於門檻，且不是靜止(0)，則將其抹除
+      if (segmentLength < threshold && currentLabel != 0) {
+        for (int j = start; j < i; j++) {
+          cleaned[j] = 0; // 統一歸類為無動作
         }
       }
-      idx += len;
     }
 
-    return finalLabels;
+    return cleaned;
   }
 }
