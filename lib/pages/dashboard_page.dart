@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
-import 'package:file_picker/file_picker.dart'; // 💡 匯入檔案選擇器套件
+import 'dart:convert'; // 💡 新增
+import 'dart:io';      // 💡 新增
+import 'package:file_picker/file_picker.dart';
 import '../models/app_models.dart';
 import '../services/native_service.dart';
+import '../services/rehab_pipeline.dart'; // 💡 新增
 import 'package:csv/csv.dart';
 class DashboardPage extends StatefulWidget {
   final String userId; // 💡 接收目前的 userId，確保分析報告存對人
@@ -180,18 +183,16 @@ class _DashboardPageState extends State<DashboardPage> {
   // ----------------------------------------------------------------------
   Future<void> _pickAndAnalyzeCSV() async {
     try {
-      // 1. 開啟內建檔案選擇器 (限定選取 csv 檔案)
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
 
-      if (result != null) {
+      if (result != null && result.files.single.path != null) {
         String fileName = result.files.single.name;
-        // 2. 選取成功後，顯示警語對話框
-        _showAnalysisWarningDialog(fileName);
+        String filePath = result.files.single.path!;
+        _showAnalysisWarningDialog(fileName, filePath);
       } else {
-        // 使用者手動取消選取
         _showTopSnackBar('已取消選擇檔案', color: Colors.grey);
       }
     } catch (e) {
@@ -199,8 +200,8 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  void _showAnalysisWarningDialog(String fileName) {
-    bool isAnalyzing = false; // 控制是否正在顯示轉圈圈
+  void _showAnalysisWarningDialog(String fileName, String filePath) {
+    bool isAnalyzing = false;
 
     showDialog(
       context: context,
@@ -287,19 +288,42 @@ class _DashboardPageState extends State<DashboardPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () async {
-                  // 1. 切換成正在分析的轉圈圈狀態
                   setDialogState(() => isAnalyzing = true);
 
-                  // 2. 模擬機器學習模型的分析時間 (等待 3 秒)
-                  await Future.delayed(const Duration(seconds: 3));
+                  try {
+                    final pipeline = RehabPipeline();
+                    pipeline.initPipeline();
 
-                  if (!mounted) return;
-                  Navigator.pop(ctx); // 關閉對話框
+                    final File file = File(filePath);
+                    final String csvString = await file.readAsString();
+                    List<String> lines = const LineSplitter().convert(csvString);
 
-                  _showTopSnackBar('✅ CSV 分析完成！', color: const Color(0xFF0D9488));
+                    int lineCount = 0;
+                    for (String line in lines) {
+                      if (line.trim().isEmpty) continue;
+                      List<double> row = line.split(',').map((s) => double.tryParse(s.trim()) ?? 0.0).toList();
+                      if (row.length >= 50) {
+                        pipeline.feedData(row.sublist(0, 50));
+                      }
+                      
+                      lineCount++;
+                      if (lineCount % 100 == 0) {
+                        await Future.delayed(Duration.zero); // 釋放 UI 執行緒
+                      }
+                    }
 
-                  // 3. 產生假資料並跳轉至分析報告頁面
-                  _generateMockCSVReport();
+                    AssessmentReport realReport = await pipeline.finishAndGenerateReport(widget.userId, "從檔案匯入");
+
+                    if (!mounted) return;
+                    Navigator.pop(ctx); 
+
+                    _showTopSnackBar('✅ CSV 分析完成！', color: const Color(0xFF0D9488));
+                    widget.onAnalysisCompleted(realReport);
+
+                  } catch (e) {
+                    if (mounted) Navigator.pop(ctx);
+                    _showTopSnackBar('❌ 分析失敗: $e', color: Colors.red);
+                  }
                 },
                 child: const Text('確認並開始分析', style: TextStyle(fontWeight: FontWeight.bold)),
               ),

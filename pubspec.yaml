@@ -81,6 +81,14 @@ flutter:
     - assets/s1_rawData.csv
     - assets/raw_data_s1.csv
     - assets/app_icon.png # 💡 新增：宣告您的圖片路徑，確保 Flutter 能讀取到它
+    - assets/test.csv
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
 
 # 💡 新增：設定一鍵生成的圖標規則 (與 flutter: 同層級)
 flutter_icons:
