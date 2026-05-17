@@ -46,6 +46,8 @@ dependencies:
   uuid: ^4.5.3
   csv: ^6.0.0
   flutter_slidable: ^4.0.3
+  scidart: ^0.0.2-dev.10
+  vector_math: ^2.1.4
 
 dev_dependencies:
   flutter_test:
@@ -81,7 +83,9 @@ flutter:
     - assets/s1_rawData.csv
     - assets/raw_data_s1.csv
     - assets/app_icon.png # 💡 新增：宣告您的圖片路徑，確保 Flutter 能讀取到它
-    - assets/test.csv
+    - assets/raw_test.csv
+    - assets/light_left.csv
+    - assets/light_right.csv
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

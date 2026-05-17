@@ -126,7 +126,12 @@ class RehabPipeline {
     List<int> finalLabels = PredictionFilter.gapFillFilter(PredictionFilter.medianFilter(combinedPreds, 3));
 
     final analyzer = PostAnalyzer();
+    print('🧪 [RehabPipeline] 準備進行分析，Session 資料長度: ${_sessionRawData.length}, 標籤長度: ${finalLabels.length}');
+    if (_sessionRawData.isNotEmpty) {
+      print('🧪 [RehabPipeline] 第一筆 RawData 範例: ${_sessionRawData[0].sublist(6, 10)}');
+    }
     List<PostAnalyzerResult> analysisResults = analyzer.processData([_sessionRawData], [finalLabels]);
+    print('🧪 [RehabPipeline] 分析完成，結果數量: ${analysisResults.length}');
 
     return _convertToReport(userId, totalTime, analysisResults);
   }

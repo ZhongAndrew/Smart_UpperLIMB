@@ -223,40 +223,6 @@ class _RecordPageState extends State<RecordPage> {
       _currentState = RecordState.completed;
       _isAnalyzing = true;
     });
-
-    // ---------------------------------------------------------
-    // 🧪 [測試邏輯] 這裡可以切換使用真實資料或 test.csv
-    // 之後移除時，只需將整個 if (true) 塊刪除，保留原本的 Pipeline 餵資料邏輯即可
-    if (true) { 
-      _showTopSnackBar('🧪 測試模式：正在從 test.csv 載入資料...');
-      try {
-        final pipeline = RehabPipeline();
-        pipeline.initPipeline();
-        
-        final String csvString = await DefaultAssetBundle.of(context).loadString('assets/test.csv');
-        List<String> lines = const LineSplitter().convert(csvString);
-        
-        int lineCount = 0;
-        for (String line in lines) {
-          if (line.trim().isEmpty) continue;
-          List<double> row = line.split(',').map((s) => double.tryParse(s.trim()) ?? 0.0).toList();
-          if (row.length >= 50) {
-            pipeline.feedData(row.sublist(0, 50));
-          }
-          
-          lineCount++;
-          if (lineCount % 100 == 0) {
-            await Future.delayed(Duration.zero);
-          }
-        }
-        _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
-        setState(() => _isAnalyzing = false);
-        _showTopSnackBar('✅ 測試資料分析完成！');
-        return; // 結束，跳過下方的真實資料處理
-      } catch (e) {
-        print("❌ 測試資料載入失敗: $e");
-      }
-    }
     // ---------------------------------------------------------
 
     // 1. 找出 5 顆感測器的共同重疊時間

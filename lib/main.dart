@@ -3,6 +3,7 @@ import 'package:flutter/services.dart'; // 💡 [您加的] 直立鎖定套件
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'pages/login_page.dart';
 import 'services/native_service.dart';
+import 'tests/mock_bluetooth_tester.dart'; // 💡 引入測試器
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,9 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+
+  // 🧪 啟動測試邏輯 (若不想在啟動時執行測試，請註解掉下一行)
+  await MockBluetoothTester.runTest('assets/light_right.csv');
 
   runApp(const MyApp());
 
