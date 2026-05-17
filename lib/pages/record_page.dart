@@ -38,6 +38,9 @@ class RecordPage extends StatefulWidget {
 
 class _RecordPageState extends State<RecordPage> {
 
+  // 記錄每顆感測器的 internal time 與手機 system time 的時間差 (以微秒為單位)
+  final Map<String, int> _timeOffsets = {};
+
   // 在 _RecordPageState 類別內新增：
   final Map<String, List<RawSensorPoint>> _rawBuffers = {
     "LFA": [],
@@ -98,8 +101,24 @@ class _RecordPageState extends State<RecordPage> {
         String prefix = data['sensorId']?.toString() ?? "W";
 
         if (orderedSensors.contains(prefix)) {
+          // 💡 取得手機當下的系統時間 (微秒) 作為絕對標準
+          int currentHostTimeUs = DateTime.now().microsecondsSinceEpoch;
+          int sensorTsUs = data['timestamp'] ?? 0;
+
+          // 🚨 只有在錄製狀態時，才進行時間錨定 (避免收到錄製前的髒資料)
+          if (_currentState == RecordState.recording) {
+            // 如果這顆感測器是按下錄製後「第一次」抵達，計算它的專屬 Offset
+            if (!_timeOffsets.containsKey(prefix)) {
+              _timeOffsets[prefix] = currentHostTimeUs - sensorTsUs;
+            }
+          }
+
+          // 🌟 換算成對齊後的全球統一時間 (如果還沒開始錄製，就先用原本的)
+          int alignedTsUs = _timeOffsets.containsKey(prefix)
+              ? sensorTsUs + _timeOffsets[prefix]!
+              : sensorTsUs;
+
           // 1. 統一解析 10 軸資料與時間戳
-          int ts = data['timestamp'] ?? 0;
           double aX = _parseDouble(data['accX']);
           double aY = _parseDouble(data['accY']);
           double aZ = _parseDouble(data['accZ']);
@@ -111,9 +130,10 @@ class _RecordPageState extends State<RecordPage> {
           double qY = _parseDouble(data['quatY'] ?? 0.0);
           double qZ = _parseDouble(data['quatZ'] ?? 0.0);
 
-          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer (取代舊的 _latestSensorData)
+          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer
           List<double> vals = [aX, aY, aZ, gX, gY, gZ, qW, qX, qY, qZ];
-          _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: ts, values: vals));
+          // 💡 注意：這裡存入的 timestamp 已經替換成校正後的 alignedTsUs
+          _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: alignedTsUs, values: vals));
 
           // 💡 修正：只有在「非錄製狀態」才限制 300 筆 (為了讓波形圖能動)。
           // 只要進入錄製狀態，就讓它無限收集整段復健資料！
@@ -203,13 +223,11 @@ class _RecordPageState extends State<RecordPage> {
     setState(() {
       _currentState = RecordState.recording;
       _recordingSeconds = 0;
-      // 注意：這裡不用再清空 _recordingBuffer，也不用啟動 aiSampleTimer 了
 
-      // 💡 [關鍵新增]：徹底清空 5 顆感測器的歷史資料！
-      // 確保病患的資料是從「按下這瞬間」才開始純淨收集
       for (String sensor in orderedSensors) {
         _rawBuffers[sensor]!.clear();
       }
+      _timeOffsets.clear(); // 💡 新增這行：確保重新計算時間錨點
     });
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -224,69 +242,110 @@ class _RecordPageState extends State<RecordPage> {
       _isAnalyzing = true;
     });
 
-    // 🛡️ 讓畫面先跳出提示並顯示轉圈圈，避免瞬間卡死
     _showTopSnackBar('⏳ 準備資料與分析中，請稍候...');
     await Future.delayed(const Duration(milliseconds: 100));
 
-    // 1. 找出 5 顆感測器的共同重疊時間
-    int maxStartTime = 0;
-    int minEndTime = -1;
+    // 1. 找出 5 顆感測器的「完美重疊時間區間」(交集)
+    int maxStartTimeUs = 0; // 最晚進來的第一筆資料
+    int minEndTimeUs = 9223372036854775807; // dart integer max
+
     for (String sensor in orderedSensors) {
       if (_rawBuffers[sensor]!.isEmpty) {
         _showTopSnackBar('⚠️ 缺少感測器資料: $sensor', color: Colors.orange);
         setState(() => _isAnalyzing = false);
         return;
       }
-      int firstTs = _rawBuffers[sensor]!.first.timestamp;
-      int lastTs = _rawBuffers[sensor]!.last.timestamp;
-      if (firstTs > maxStartTime) maxStartTime = firstTs;
-      if (minEndTime == -1 || lastTs < minEndTime) minEndTime = lastTs;
+      int startTs = _rawBuffers[sensor]!.first.timestamp;
+      int endTs = _rawBuffers[sensor]!.last.timestamp;
+
+      if (startTs > maxStartTimeUs) maxStartTimeUs = startTs;
+      if (endTs < minEndTimeUs) minEndTimeUs = endTs;
     }
 
-    // 💡 聰明偵測：判斷時間戳單位是微秒(Microseconds)還是毫秒(Milliseconds)
-    int sampleDelta = _rawBuffers[orderedSensors.first]![1].timestamp - _rawBuffers[orderedSensors.first]![0].timestamp;
-    double timeScale = (sampleDelta > 1000) ? 1000.0 : 1.0;
-
-    // 統一換算成毫秒來判斷錄製長度
-    double totalDurationMs = (minEndTime - maxStartTime).toDouble() / timeScale;
+    // 換算成毫秒檢查長度
+    double totalDurationMs = (minEndTimeUs - maxStartTimeUs) / 1000.0;
     if (totalDurationMs < 2000) {
-      _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒)', color: Colors.orange);
+      _showTopSnackBar('⚠️ 重疊錄製時間過短 (不足 2 秒)，可能是有感測器太晚連上', color: Colors.orange);
       setState(() => _isAnalyzing = false);
       return;
     }
 
-    // 2. 建立 Pipeline 引擎並初始化
     final pipeline = RehabPipeline();
     pipeline.initPipeline();
 
-    // 3. 以 60Hz 重新對齊，並直接一筆一筆「餵給」 Pipeline
-    double intervalMs = 1000.0 / 60.0; // 完美的 60Hz 間隔 (毫秒)
-    int totalPoints = (totalDurationMs / intervalMs).floor();
-    List<double>? lastValidFrame;
+    // 2. 以 60Hz 重新採樣 (間距 16666.66 微秒)
+    double intervalUs = 1000000.0 / 60.0;
+    int totalFrames = ((minEndTimeUs - maxStartTimeUs) / intervalUs).floor();
 
-    // 推進時間軸的步伐，必須換算回原始單位 (微秒就乘 1000)
-    double intervalRaw = intervalMs * timeScale;
+    Map<String, int> searchIndices = { for (var s in orderedSensors) s: 0 };
 
-    for (int i = 0; i < totalPoints; i++) {
-      double targetT = maxStartTime + (i * intervalRaw);
-      List<double>? frame = DataProcessor.extractSingleFrame50Axes(_rawBuffers, targetT);
+    // 💡 設立 ZOH 的極限容忍時間 (20 毫秒 = 20,000 微秒)
+    const double zohThresholdUs = 20000.0;
 
-      if (frame != null) {
-        lastValidFrame = frame;
-        pipeline.feedData(frame); // 🚀 直接餵給 Pipeline！
-      } else if (lastValidFrame != null) {
-        pipeline.feedData(lastValidFrame); // 掉包就拿上一筆頂替
+    for (int frame = 0; frame < totalFrames; frame++) {
+      // 每一幀的目標時間，是從最晚抵達的那顆感測器開始算
+      double targetTimeUs = maxStartTimeUs + (frame * intervalUs);
+      List<double> currentFrame50Axes = [];
+
+      for (String sensor in orderedSensors) {
+        var buffer = _rawBuffers[sensor]!;
+        int idx = searchIndices[sensor]!;
+
+        // 🧠 找到目標時間落在哪兩個資料點之間
+        while (idx < buffer.length - 1) {
+          if (buffer[idx + 1].timestamp <= targetTimeUs) {
+            idx++;
+          } else {
+            break;
+          }
+        }
+        searchIndices[sensor] = idx;
+
+        RawSensorPoint p1 = buffer[idx];
+
+        // 邊界防呆：如果已經是陣列最後一筆，無法內插，強制使用 ZOH
+        if (idx == buffer.length - 1) {
+          currentFrame50Axes.addAll(p1.values);
+          continue;
+        }
+
+        RawSensorPoint p2 = buffer[idx + 1];
+
+        // 計算目標時間距離「前一點」有多久
+        double timeSinceP1Us = targetTimeUs - p1.timestamp;
+
+        // 🌟 條件式混合判定：ZOH 還是 Linear Interpolation？
+        if (timeSinceP1Us <= zohThresholdUs) {
+          // 🟢 狀況 A：距離前一點很近 (< 20ms)，直接使用 ZOH
+          currentFrame50Axes.addAll(p1.values);
+        } else {
+          // 🔴 狀況 B：掉封包，缺口過大，啟動線性內插
+          double timeGapUs = (p2.timestamp - p1.timestamp).toDouble();
+
+          // 防呆：避免除以零，並將比例限制在 0.0 ~ 1.0 之間
+          double ratio = timeGapUs > 0 ? (timeSinceP1Us / timeGapUs) : 0.0;
+          ratio = ratio.clamp(0.0, 1.0);
+
+          // 對 10 個軸分別拉直線推算數值
+          for (int v = 0; v < 10; v++) {
+            double val1 = p1.values[v];
+            double val2 = p2.values[v];
+            double interpolatedVal = val1 + ((val2 - val1) * ratio);
+            currentFrame50Axes.add(interpolatedVal);
+          }
+        }
       }
 
-      // 🛡️ 關鍵防卡死機制：每處理 60 筆 (約1秒的資料) 就喘口氣，讓 UI 更新轉圈圈動畫
-      if (i % 60 == 0) {
-        await Future.delayed(Duration.zero);
+      // 湊滿 50 軸，確保資料結構完整後再餵給 AI
+      if (currentFrame50Axes.length == 50) {
+        pipeline.feedData(currentFrame50Axes);
       }
+
+      if (frame % 60 == 0) await Future.delayed(Duration.zero);
     }
 
-    // 4. 所有資料餵完了，請 Pipeline 生成最終報告
     _showTopSnackBar('🧠 AI 模型推論中...');
-    await Future.delayed(const Duration(milliseconds: 100)); // 再次釋放 UI 給模型跑
+    await Future.delayed(const Duration(milliseconds: 100));
 
     _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
 
