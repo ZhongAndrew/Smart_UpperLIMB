@@ -14,7 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 // 💡 1. 移除了 calibrated 狀態，讓流程更簡潔
-enum RecordState { initial, recording, completed }
+enum RecordState { initial, ready, recording, completed }
 
 class RecordPage extends StatefulWidget {
   final List<Sensor> sensors;
@@ -218,7 +218,12 @@ class _RecordPageState extends State<RecordPage> {
     overlay.insert(entry);
     Future.delayed(const Duration(seconds: 3), () { if (entry.mounted) entry.remove(); });
   }
-
+// 💡 新增：解除防誤觸鎖定，進入可錄製狀態
+  void _prepareToRecord() {
+    setState(() {
+      _currentState = RecordState.ready;
+    });
+  }
   void _startRecording() {
     setState(() {
       _currentState = RecordState.recording;
@@ -484,13 +489,23 @@ class _RecordPageState extends State<RecordPage> {
 
   String get _statusText {
     switch (_currentState) {
-      case RecordState.initial: return '準備就緒，可開始錄製'; // 💡 2. 文字修改
+      case RecordState.initial: return '受試者準備中'; // 💡 新增的初始文字
+      case RecordState.ready: return '準備就緒，可開始錄製';
       case RecordState.recording: return '錄製中...';
       case RecordState.completed: return '錄製完成';
     }
   }
 
-  Color get _statusColor => _currentState == RecordState.recording ? Colors.red.shade600 : const Color(0xFF0D9488);
+  Color get _statusColor {
+    switch (_currentState) {
+      case RecordState.recording:
+        return Colors.red.shade600;
+      case RecordState.ready:
+        return Colors.orange.shade600; // 💡 準備狀態給予橘色提示
+      default:
+        return const Color(0xFF0D9488);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -571,24 +586,75 @@ class _RecordPageState extends State<RecordPage> {
   Widget _buildControlButtons() {
     switch (_currentState) {
       case RecordState.initial:
-      // 💡 3. 一進來就是「開始錄製」按鈕！
-        return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white), onPressed: _startRecording, icon: const Icon(Icons.play_arrow_rounded), label: const Text('開始錄製')));
+      // 💡 階段 1：防誤觸按鈕 (點擊後只改變狀態，不錄資料)
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade500,
+                  foregroundColor: Colors.white,
+                  elevation: 0, // 扁平化一點，看起來像等待解鎖
+                ),
+                onPressed: _prepareToRecord,
+                icon: const Icon(Icons.pan_tool_rounded, size: 20),
+                label: const Text('準備錄製', style: TextStyle(fontWeight: FontWeight.bold))
+            )
+        );
+
+      case RecordState.ready:
+      // 💡 階段 2：真正的開始錄製按鈕
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D9488),
+                    foregroundColor: Colors.white
+                ),
+                onPressed: _startRecording,
+                icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                label: const Text('開始錄製', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+            )
+        );
+
       case RecordState.recording:
-        return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade500, foregroundColor: Colors.white), onPressed: _stopRecording, icon: const Icon(Icons.stop_rounded), label: const Text('停止錄製')));
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade500,
+                    foregroundColor: Colors.white
+                ),
+                onPressed: _stopRecording,
+                icon: const Icon(Icons.stop_rounded, size: 22),
+                label: const Text('停止錄製', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+            )
+        );
+
       case RecordState.completed:
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            OutlinedButton.icon(onPressed: _deleteData, icon: const Icon(Icons.delete_outline, size: 18), label: const Text('刪除')),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(onPressed: _exportCSV, icon: const Icon(Icons.download_rounded, size: 18), label: const Text('匯出')),
+            OutlinedButton.icon(
+                onPressed: _deleteData,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('刪除')
+            ),
             const SizedBox(width: 8),
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white),
+                onPressed: _exportCSV,
+                icon: const Icon(Icons.download_rounded, size: 18),
+                label: const Text('匯出')
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white
+              ),
               onPressed: _isAnalyzing ? null : _showAnalysisDialog,
-              icon: _isAnalyzing 
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.analytics_outlined, size: 18),
+              icon: _isAnalyzing
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.analytics_outlined, size: 18),
               label: Text(_isAnalyzing ? '分析中...' : '分析'),
             ),
           ],
