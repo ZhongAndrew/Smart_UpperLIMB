@@ -223,13 +223,17 @@ class _RecordPageState extends State<RecordPage> {
       _currentState = RecordState.completed;
       _isAnalyzing = true;
     });
-    // ---------------------------------------------------------
+
+    // 🛡️ 讓畫面先跳出提示並顯示轉圈圈，避免瞬間卡死
+    _showTopSnackBar('⏳ 準備資料與分析中，請稍候...');
+    await Future.delayed(const Duration(milliseconds: 100));
 
     // 1. 找出 5 顆感測器的共同重疊時間
     int maxStartTime = 0;
     int minEndTime = -1;
     for (String sensor in orderedSensors) {
       if (_rawBuffers[sensor]!.isEmpty) {
+        _showTopSnackBar('⚠️ 缺少感測器資料: $sensor', color: Colors.orange);
         setState(() => _isAnalyzing = false);
         return;
       }
@@ -239,7 +243,12 @@ class _RecordPageState extends State<RecordPage> {
       if (minEndTime == -1 || lastTs < minEndTime) minEndTime = lastTs;
     }
 
-    double totalDurationMs = (minEndTime - maxStartTime).toDouble();
+    // 💡 聰明偵測：判斷時間戳單位是微秒(Microseconds)還是毫秒(Milliseconds)
+    int sampleDelta = _rawBuffers[orderedSensors.first]![1].timestamp - _rawBuffers[orderedSensors.first]![0].timestamp;
+    double timeScale = (sampleDelta > 1000) ? 1000.0 : 1.0;
+
+    // 統一換算成毫秒來判斷錄製長度
+    double totalDurationMs = (minEndTime - maxStartTime).toDouble() / timeScale;
     if (totalDurationMs < 2000) {
       _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒)', color: Colors.orange);
       setState(() => _isAnalyzing = false);
@@ -251,24 +260,34 @@ class _RecordPageState extends State<RecordPage> {
     pipeline.initPipeline();
 
     // 3. 以 60Hz 重新對齊，並直接一筆一筆「餵給」 Pipeline
-    double interval = 1000.0 / 60.0; // 60Hz
-    int totalPoints = (totalDurationMs / interval).floor();
+    double intervalMs = 1000.0 / 60.0; // 完美的 60Hz 間隔 (毫秒)
+    int totalPoints = (totalDurationMs / intervalMs).floor();
     List<double>? lastValidFrame;
 
+    // 推進時間軸的步伐，必須換算回原始單位 (微秒就乘 1000)
+    double intervalRaw = intervalMs * timeScale;
+
     for (int i = 0; i < totalPoints; i++) {
-      double targetT = maxStartTime + (i * interval);
+      double targetT = maxStartTime + (i * intervalRaw);
       List<double>? frame = DataProcessor.extractSingleFrame50Axes(_rawBuffers, targetT);
 
       if (frame != null) {
         lastValidFrame = frame;
-        pipeline.feedData(frame);
+        pipeline.feedData(frame); // 🚀 直接餵給 Pipeline！
       } else if (lastValidFrame != null) {
-        pipeline.feedData(lastValidFrame);
+        pipeline.feedData(lastValidFrame); // 掉包就拿上一筆頂替
+      }
+
+      // 🛡️ 關鍵防卡死機制：每處理 60 筆 (約1秒的資料) 就喘口氣，讓 UI 更新轉圈圈動畫
+      if (i % 60 == 0) {
+        await Future.delayed(Duration.zero);
       }
     }
 
     // 4. 所有資料餵完了，請 Pipeline 生成最終報告
-    _showTopSnackBar('⏳ 分析中，請稍候...');
+    _showTopSnackBar('🧠 AI 模型推論中...');
+    await Future.delayed(const Duration(milliseconds: 100)); // 再次釋放 UI 給模型跑
+
     _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
 
     setState(() => _isAnalyzing = false);
