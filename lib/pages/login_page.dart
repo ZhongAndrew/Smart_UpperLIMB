@@ -94,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
         String userName = '${user.lastName}${user.firstName}';
         _showTopSnackBar('✅ 登入成功！歡迎 $userName');
 
-        // 💡 重點修復：確保成功登入後，有把 user.id 傳遞給 MainSystem！
+        // 確保成功登入後，有把 user.id 傳遞給 MainSystem！
         _navigateToMain(isGuest: false, userName: userName, userId: user.id);
       } else {
         _showTopSnackBar('❌ 帳號或密碼錯誤！', color: Colors.redAccent);
@@ -142,14 +142,6 @@ class _LoginPageState extends State<LoginPage> {
         builder: (context) => MainSystem(isGuest: isGuest, userName: userName, userId: userId ?? 'guest_id'),
       ),
     );
-  }
-//陳 大狀 手痛
-  void _fillTestAccount() {
-    setState(() {
-      _accountController.text = 'doctor3@example.com';
-      _passwordController.text = '123456cC';
-    });
-    _showTopSnackBar('已帶入測試帳號！如果是第一次使用，請先切換至註冊');
   }
 
   void _switchMode(bool toLogin) {
@@ -249,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
 
-                        // 👇 加入這段忘記密碼按鈕 👇
+                        // 💡 調整了忘記密碼按鈕的間距，讓它在沒有快速登入按鈕的情況下，畫面依然平衡
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
@@ -266,16 +258,8 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
 
-                        if (isLoginMode)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: _fillTestAccount,
-                              child: const Text('使用測試帳號快速登入', style: TextStyle(color: Colors.grey, fontSize: 13, decoration: TextDecoration.underline)),
-                            ),
-                          )
-                        else
-                          const SizedBox(height: 32),
+                        // 💡 為了補償拿掉的按鈕空間，加入一點固定高度的留白，保持設計的呼吸感
+                        const SizedBox(height: 16),
 
                         SizedBox(
                           width: double.infinity, height: 52,

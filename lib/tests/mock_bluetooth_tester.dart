@@ -1,164 +1,68 @@
-// import 'package:flutter/services.dart' show rootBundle;
-// import 'dart:convert';
-// import 'dart:io';
-// import 'package:path_provider/path_provider.dart';
-// import 'package:smart_rehab_pro/services/rehab_pipeline.dart';
-// import 'package:smart_rehab_pro/utils/PostAnalyzer.dart'; // 確保引入你的新版 PostAnalyzer
-//
-// class MockBluetoothTester {
-//   // 假設你原本的 PostAnalyzer 裡面有這個 Map，如果沒有可以加回去
-//   static const Map<int, String> actionNames = {
-//     0:  "無動作 (靜止)",
-//     1:  "左側前平舉",
-//     2:  "左側側平舉",
-//     3:  "左側後平舉",
-//     4:  "左側水平外展",
-//     5:  "左側水平內收",
-//     6:  "左側前向肩輪(順)",
-//     7:  "左側前向肩輪(逆)",
-//     8:  "左側側向肩輪(順)",
-//     9:  "左側側向肩輪(逆)",
-//     10:  "右側前平舉",
-//     11:  "右側側平舉",
-//     12:  "右側後平舉",
-//     13:  "右側水平外展",
-//     14:  "右側水平內收",
-//     15:  "右側前向肩輪(順)",
-//     16:  "右側前向肩輪(逆)",
-//     17:  "右側側向肩輪(順)",
-//     18:  "右側側向肩輪(逆)", // 請換成你的真實動作名稱
-//   };
-//
-//   static Future<void> runTest(String csvPath) async {
-//     print("\n==============================================");
-//     print("🔵 [MockBluetooth] 啟動虛擬藍牙測試 (64Hz 基準)");
-//     print("==============================================");
-//
-//     try {
-//       final pipeline = RehabPipeline();
-//       pipeline.initPipeline();
-//       List<List<double>> sessionBuffer = [];
-//
-//       print("⏳ 正在載入 CSV 測試資料: $csvPath ...");
-//       final String csvString = await rootBundle.loadString(csvPath);
-//       List<String> lines = const LineSplitter().convert(csvString);
-//
-//       print("📡 開始模擬藍牙串流發送資料...");
-//       for (String line in lines) {
-//         if (line.trim().isEmpty) continue;
-//         List<double> row = line.split(',').map((s) => double.tryParse(s.trim()) ?? 0.0).toList();
-//         if (row.length >= 50) {
-//           List<double> validRow = row.sublist(0, 50);
-//           pipeline.feedData(validRow);
-//           sessionBuffer.add(validRow);
-//         }
-//       }
-//
-//       // 1. 取得原始預測矩陣
-//       //List<int> rawPredictions = await pipeline.finishAndGenerateReport();
-//
-//       // 🌟 安全檢查：如果 C++ 沒回傳東西
-//       // if (rawPredictions.isEmpty) {
-//       //   print("⚠️ [Warning] C++ 模型未回傳任何預測標籤。");
-//       //   return;
-//       // }
-//
-//       final analyzer = PostAnalyzer();
-//
-//       // 2. 清理預測矩陣
-//       List<int> finalPredictions = analyzer.mergeShortSegments(rawPredictions, 12);
-//       await _exportPredictionsToCSV(finalPredictions);
-//
-//       // 3. 🔍 分段分析
-//       List<PostAnalyzerResult> results = analyzer.processData([sessionBuffer], [finalPredictions]);
-//
-//       // 🌟 安全檢查：如果分析後沒有產出任何有效動作片段
-//       if (results.isEmpty) {
-//         print("\n📭 [Analysis] 未偵測到有效復健動作（可能片段過短被過濾）。");
-//         print("==============================================\n");
-//         return;
-//       }
-//
-//       // 4. 排序並合併相同編號的片段
-//       results.sort((a, b) => a.actionId.compareTo(b.actionId));
-//
-//       List<PostAnalyzerResult> mergedResults = [];
-//
-//       // ✅ 使用更安全的 List 處理方式
-//       PostAnalyzerResult current = results.first;
-//
-//       for (int i = 1; i < results.length; i++) {
-//         if (results[i].actionId == current.actionId) {
-//           // 合併邏輯：注意這裡要確保欄位對應正確
-//           current = PostAnalyzerResult(
-//               current.personId,
-//               current.actionId,
-//               current.side,
-//               current.startIdx,
-//               results[i].endIdx,
-//               current.durationSec + results[i].durationSec,
-//               current.count + results[i].count,
-//               current.repAngles + results[i].repAngles
-//           );
-//         } else {
-//           mergedResults.add(current);
-//           current = results[i];
-//         }
-//       }
-//       mergedResults.add(current);
-//
-//       print("\n📊 動作最終分析報告 (雜訊過濾且編號合併):");
-//       for (var res in mergedResults) {
-//         _printSegmentResult(res);
-//       }
-//
-//       print("\n🏆 測試完成！");
-//       print("==============================================\n");
-//
-//     } catch (e, stacktrace) {
-//       print("❌ [MockBluetooth] 測試崩潰：$e");
-//       print("🔍 堆疊追蹤：$stacktrace"); // 加入堆疊追蹤，方便精確定位行數
-//     }
-//   }
-//
-//   /// 將預測結果矩陣匯出成 CSV
-//   static Future<void> _exportPredictionsToCSV(List<int> predictions) async {
-//     try {
-//       final directory = await getApplicationDocumentsDirectory();
-//       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-//       final String fileName = 'predictions_final_$timestamp.csv';
-//       final File file = File('${directory.path}/$fileName');
-//
-//       StringBuffer csvContent = StringBuffer("Window_Index,Action_ID,Action_Name\n");
-//       for (int i = 0; i < predictions.length; i++) {
-//         int id = predictions[i];
-//         String name = actionNames[id] ?? "Unknown";
-//         csvContent.writeln("$i,$id,$name");
-//       }
-//
-//       await file.writeAsString(csvContent.toString());
-//       print("💾 [匯出成功] 最終清理後的預測矩陣已存至: ${file.path}");
-//     } catch (e) {
-//       print("⚠️ 匯出預測 CSV 失敗: $e");
-//     }
-//   }
-//
-//   // 對應新版 PostAnalyzerResult 的列印方式
-//   static void _printSegmentResult(PostAnalyzerResult result) {
-//     String actionName = actionNames[result.actionId] ?? "Unknown";
-//     print("----------------------------------------------");
-//     print("📌 動作編號: ${result.actionId} ($actionName)");
-//     print("🔢 動作次數: ${result.count} 次");
-//
-//     // 🌟 處理角度列印
-//     if (result.count > 0 && result.repAngles.isNotEmpty) {
-//       String anglesStr = result.repAngles.map((a) => "${a.toStringAsFixed(1)}°").join(", ");
-//       print("📐 每次角度: [ $anglesStr ]");
-//     } else {
-//       print("📐 每次角度: 無法辨識完整動作");
-//     }
-//
-//     print("💪 偵測部位: ${result.side}");
-//     print("⏱️ 持續時間: ${result.durationSec.toStringAsFixed(2)} 秒");
-//   }
-// }
+import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert';
+import 'package:smart_rehab_pro/services/rehab_pipeline.dart';
+import 'package:smart_rehab_pro/models/app_models.dart';
+
+class MockBluetoothTester {
+  static Future<void> runTest(String csvPath) async {
+    print("\n==============================================");
+    print("🔵 [MockBluetooth] 啟動模型與後分析整合測試");
+    print("==============================================");
+
+    try {
+      final pipeline = RehabPipeline();
+      pipeline.initPipeline();
+
+      final String csvString = await rootBundle.loadString(csvPath);
+      List<String> lines = const LineSplitter().convert(csvString);
+
+      print("📡 正在餵食感測器資料 (共 ${lines.length} 筆)...");
+
+// 1. 使用 .skip(1) 跳過 CSV 的第一列標題 (Row 0)
+      for (String line in lines.skip(1)) {
+        if (line.trim().isEmpty) continue;
+
+        // 2. 將每行轉為 List<double>
+        List<double> rawRow = line.split(',')
+            .map((s) => double.tryParse(s.trim()) ?? 0.0)
+            .toList();
+
+        // 3. 使用 .sublist(1) 跳過每行的第一欄 (Column 0)
+        // 並確保剩下的欄位長度足夠 (如果你原本需要 50 欄，這裡要確認長度)
+        if (rawRow.length > 1) {
+          // 這裡的 sublist(1, 51) 會抓取原本 CSV 的第 1 到第 50 欄
+          // 這樣流入 pipeline 的資料 index 0 就會是原本 CSV 的 (1,1)
+          List<double> cleanRow = rawRow.sublist(1);
+
+          // 如果你的模型固定需要 50 個特徵：
+          if (cleanRow.length >= 50) {
+            pipeline.feedData(cleanRow.sublist(0, 50));
+          }
+        }
+      }
+
+      print("⏳ 核心運算中...");
+      AssessmentReport report = await pipeline.finishAndGenerateReport("tester_id", "00:00");
+
+      print("\n📊 [最終分析報告]");
+      for (var ex in report.results) {
+        int leftCount = ex.left.length;
+        int rightCount = ex.right.length;
+        String leftAngles = ex.left.map((r) => "${r.rom}°").join(", ");
+        String rightAngles = ex.right.map((r) => "${r.rom}°").join(", ");
+
+        print("----------------------------------------------");
+        print("📌 動作: ${ex.name}");
+        print("👈 左側: $leftCount 次 ${leftCount > 0 ? '[$leftAngles]' : ''}");
+        print("👉 右側: $rightCount 次 ${rightCount > 0 ? '[$rightAngles]' : ''}");
+      }
+
+      print("\n🏆 測試完成！");
+      print("==============================================\n");
+
+    } catch (e, stacktrace) {
+      print("❌ [MockBluetooth] 測試崩潰：$e");
+      print("🔍 堆疊追蹤：$stacktrace");
+    }
+  }
+}

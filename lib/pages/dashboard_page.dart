@@ -237,7 +237,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   Text('已選取檔案：\n$fileName\n', style: const TextStyle(fontWeight: FontWeight.bold)),
                   const Text('即將進行動作特徵分析。分析過程會消耗較多運算資源，可能需要幾秒鐘的時間，請保持應用程式開啟。\n', style: TextStyle(fontSize: 14)),
 
-                  // 💡 新增：統一風格的黃底警告標語區塊
+                  // 💡 原本的：統一風格的黃底警告標語區塊
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -269,6 +269,40 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
 
+                  const SizedBox(height: 12),
+
+                  // 🚨 新增：專屬的 CSV 格式限制紅色警告框
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50, // 淺紅色背景，非常吸睛
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200, width: 2), // 加粗紅色邊框
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.report_problem_rounded, color: Colors.red.shade700, size: 22),
+                            const SizedBox(width: 8),
+                            Text('檔案格式嚴格限制', style: TextStyle(color: Colors.red.shade800, fontWeight: FontWeight.bold, fontSize: 15)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '請確保匯入的 CSV 檔案是「直接由本系統錄製並匯出」的對齊版資料。',
+                          style: TextStyle(color: Colors.red.shade900, fontSize: 13, fontWeight: FontWeight.bold, height: 1.5),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '若使用其他設備的資料、任意刪減欄位，或匯入非 5 顆感測器 (50~51欄) 的檔案，系統將會攔截並強制終止分析。',
+                          style: TextStyle(color: Colors.red.shade700, fontSize: 13, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 16),
                   const Text('是否確認開始分析？', style: TextStyle(fontWeight: FontWeight.bold)),
                 ],
@@ -288,41 +322,75 @@ class _DashboardPageState extends State<DashboardPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () async {
-                  setDialogState(() => isAnalyzing = true);
+                  setDialogState(() => isAnalyzing = true); // UI 轉圈圈
 
                   try {
-                    final pipeline = RehabPipeline();
-                    pipeline.initPipeline();
-
                     final File file = File(filePath);
                     final String csvString = await file.readAsString();
                     List<String> lines = const LineSplitter().convert(csvString);
 
+                    // 🚨 防呆檢查 1：檔案是不是空的？
+                    if (lines.isEmpty || lines.length < 2) {
+                      throw Exception("這是一個空檔案或資料筆數不足。");
+                    }
+
+                    // 🚨 防呆檢查 2：檢查標題列 (Header) 是否符合我們的 APP 格式
+                    String header = lines.first.toUpperCase();
+                    if (!header.contains("ACCX") || !header.contains("QUATZ") || lines.first.split(',').length < 50) {
+                      throw Exception("檔案格式錯誤！請確保這是由本 APP 匯出的 51 欄(或50欄) 對齊版 CSV 檔案。");
+                    }
+
+                    // 如果檢查通過，才初始化模型
+                    final pipeline = RehabPipeline();
+                    pipeline.initPipeline();
+
+                    // 跳過第一行標題列，開始餵資料
                     int lineCount = 0;
-                    for (String line in lines) {
+                    for (int i = 1; i < lines.length; i++) {
+                      String line = lines[i];
                       if (line.trim().isEmpty) continue;
-                      List<double> row = line.split(',').map((s) => double.tryParse(s.trim()) ?? 0.0).toList();
-                      if (row.length >= 50) {
-                        pipeline.feedData(row.sublist(0, 50));
+
+                      List<String> rawValues = line.split(',');
+                      List<double> row = [];
+
+                      // 💡 智慧擷取：不管你的 CSV 第 1 欄有沒有包含 Time_ms，我們都只抓最後的 50 個純數字欄位
+                      int startIndex = rawValues.length >= 51 ? 1 : 0;
+
+                      for (int j = startIndex; j < rawValues.length && row.length < 50; j++) {
+                        row.add(double.tryParse(rawValues[j].trim()) ?? 0.0);
                       }
-                      
+
+                      // 必須湊滿 50 軸才餵給模型
+                      if (row.length == 50) {
+                        pipeline.feedData(row);
+                      }
+
                       lineCount++;
                       if (lineCount % 100 == 0) {
-                        await Future.delayed(Duration.zero); // 釋放 UI 執行緒
+                        await Future.delayed(Duration.zero); // 釋放 UI 執行緒防卡死
                       }
                     }
 
+                    // 如果整份檔案讀完，一筆有效資料都沒有
+                    if (lineCount == 0) {
+                      throw Exception("檔案內沒有讀取到有效的數值資料。");
+                    }
+
+                    // 開始產出報告
                     AssessmentReport realReport = await pipeline.finishAndGenerateReport(widget.userId, "從檔案匯入");
 
                     if (!mounted) return;
-                    Navigator.pop(ctx); 
+                    Navigator.pop(ctx);
 
-                    _showTopSnackBar('✅ CSV 分析完成！', color: const Color(0xFF0D9488));
+                    _showTopSnackBar('✅ CSV 分析完成！共處理了 $lineCount 筆特徵', color: const Color(0xFF0D9488));
                     widget.onAnalysisCompleted(realReport);
 
                   } catch (e) {
-                    if (mounted) Navigator.pop(ctx);
-                    _showTopSnackBar('❌ 分析失敗: $e', color: Colors.red);
+                    if (mounted) Navigator.pop(ctx); // 關閉轉圈圈對話框
+
+                    // 把錯誤訊息變得更白話，顯示給使用者看
+                    String errorMsg = e.toString().replaceAll("Exception: ", "");
+                    _showTopSnackBar('❌ 匯入失敗: $errorMsg', color: Colors.redAccent);
                   }
                 },
                 child: const Text('確認並開始分析', style: TextStyle(fontWeight: FontWeight.bold)),

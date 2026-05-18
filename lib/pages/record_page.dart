@@ -13,12 +13,13 @@ import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-enum RecordState { initial, calibrated, recording, completed }
+// 💡 1. 移除了 calibrated 狀態，讓流程更簡潔
+enum RecordState { initial, ready, recording, completed }
 
 class RecordPage extends StatefulWidget {
   final List<Sensor> sensors;
   final bool isSynced;
-  final String userId; // 👈 1. 新增這行接收 userId
+  final String userId;
   final Function(int) onSwitchTab;
   final Function(AssessmentReport) onAnalysisCompleted;
 
@@ -26,7 +27,7 @@ class RecordPage extends StatefulWidget {
     super.key,
     required this.sensors,
     required this.isSynced,
-    required this.userId, // 👈 2. 新增這行規定必填
+    required this.userId,
     required this.onSwitchTab,
     required this.onAnalysisCompleted,
   });
@@ -36,6 +37,9 @@ class RecordPage extends StatefulWidget {
 }
 
 class _RecordPageState extends State<RecordPage> {
+
+  // 記錄每顆感測器的 internal time 與手機 system time 的時間差 (以微秒為單位)
+  final Map<String, int> _timeOffsets = {};
 
   // 在 _RecordPageState 類別內新增：
   final Map<String, List<RawSensorPoint>> _rawBuffers = {
@@ -97,8 +101,24 @@ class _RecordPageState extends State<RecordPage> {
         String prefix = data['sensorId']?.toString() ?? "W";
 
         if (orderedSensors.contains(prefix)) {
+          // 💡 取得手機當下的系統時間 (微秒) 作為絕對標準
+          int currentHostTimeUs = DateTime.now().microsecondsSinceEpoch;
+          int sensorTsUs = data['timestamp'] ?? 0;
+
+          // 🚨 只有在錄製狀態時，才進行時間錨定 (避免收到錄製前的髒資料)
+          if (_currentState == RecordState.recording) {
+            // 如果這顆感測器是按下錄製後「第一次」抵達，計算它的專屬 Offset
+            if (!_timeOffsets.containsKey(prefix)) {
+              _timeOffsets[prefix] = currentHostTimeUs - sensorTsUs;
+            }
+          }
+
+          // 🌟 換算成對齊後的全球統一時間 (如果還沒開始錄製，就先用原本的)
+          int alignedTsUs = _timeOffsets.containsKey(prefix)
+              ? sensorTsUs + _timeOffsets[prefix]!
+              : sensorTsUs;
+
           // 1. 統一解析 10 軸資料與時間戳
-          int ts = data['timestamp'] ?? 0;
           double aX = _parseDouble(data['accX']);
           double aY = _parseDouble(data['accY']);
           double aZ = _parseDouble(data['accZ']);
@@ -110,9 +130,10 @@ class _RecordPageState extends State<RecordPage> {
           double qY = _parseDouble(data['quatY'] ?? 0.0);
           double qZ = _parseDouble(data['quatZ'] ?? 0.0);
 
-          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer (取代舊的 _latestSensorData)
+          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer
           List<double> vals = [aX, aY, aZ, gX, gY, gZ, qW, qX, qY, qZ];
-          _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: ts, values: vals));
+          // 💡 注意：這裡存入的 timestamp 已經替換成校正後的 alignedTsUs
+          _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: alignedTsUs, values: vals));
 
           // 💡 修正：只有在「非錄製狀態」才限制 300 筆 (為了讓波形圖能動)。
           // 只要進入錄製狀態，就讓它無限收集整段復健資料！
@@ -197,27 +218,21 @@ class _RecordPageState extends State<RecordPage> {
     overlay.insert(entry);
     Future.delayed(const Duration(seconds: 3), () { if (entry.mounted) entry.remove(); });
   }
-
-  void _calibrate() async {
-    showDialog(context: context, barrierDismissible: false, builder: (ctx) => const Center(child: CupertinoActivityIndicator(radius: 20, color: Colors.white)));
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-    Navigator.pop(context);
-    setState(() => _currentState = RecordState.calibrated);
-    _showTopSnackBar('✅ 基準校正完成，可以開始錄製！');
+// 💡 新增：解除防誤觸鎖定，進入可錄製狀態
+  void _prepareToRecord() {
+    setState(() {
+      _currentState = RecordState.ready;
+    });
   }
-
   void _startRecording() {
     setState(() {
       _currentState = RecordState.recording;
       _recordingSeconds = 0;
-      // 注意：這裡不用再清空 _recordingBuffer，也不用啟動 aiSampleTimer 了
 
-      // 💡 [關鍵新增]：徹底清空 5 顆感測器的歷史資料！
-      // 確保病患的資料是從「按下這瞬間」才開始純淨收集
       for (String sensor in orderedSensors) {
         _rawBuffers[sensor]!.clear();
       }
+      _timeOffsets.clear(); // 💡 新增這行：確保重新計算時間錨點
     });
 
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -232,92 +247,118 @@ class _RecordPageState extends State<RecordPage> {
       _isAnalyzing = true;
     });
 
-    // ---------------------------------------------------------
-    // 🧪 [測試邏輯] 這裡可以切換使用真實資料或 test.csv
-    // 之後移除時，只需將整個 if (true) 塊刪除，保留原本的 Pipeline 餵資料邏輯即可
-    if (true) { 
-      _showTopSnackBar('🧪 測試模式：正在從 test.csv 載入資料...');
-      try {
-        final pipeline = RehabPipeline();
-        pipeline.initPipeline();
-        
-        final String csvString = await DefaultAssetBundle.of(context).loadString('assets/test.csv');
-        List<String> lines = const LineSplitter().convert(csvString);
-        
-        int lineCount = 0;
-        for (String line in lines) {
-          if (line.trim().isEmpty) continue;
-          List<double> row = line.split(',').map((s) => double.tryParse(s.trim()) ?? 0.0).toList();
-          if (row.length >= 50) {
-            pipeline.feedData(row.sublist(0, 50));
-          }
-          
-          lineCount++;
-          if (lineCount % 100 == 0) {
-            await Future.delayed(Duration.zero);
-          }
-        }
-        _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
-        setState(() => _isAnalyzing = false);
-        _showTopSnackBar('✅ 測試資料分析完成！');
-        return; // 結束，跳過下方的真實資料處理
-      } catch (e) {
-        print("❌ 測試資料載入失敗: $e");
-      }
-    }
-    // ---------------------------------------------------------
+    _showTopSnackBar('⏳ 準備資料與分析中，請稍候...');
+    await Future.delayed(const Duration(milliseconds: 100));
 
-    // 1. 找出 5 顆感測器的共同重疊時間
-    int maxStartTime = 0;
-    int minEndTime = -1;
+    // 1. 找出 5 顆感測器的「完美重疊時間區間」(交集)
+    int maxStartTimeUs = 0; // 最晚進來的第一筆資料
+    int minEndTimeUs = 9223372036854775807; // dart integer max
+
     for (String sensor in orderedSensors) {
       if (_rawBuffers[sensor]!.isEmpty) {
+        _showTopSnackBar('⚠️ 缺少感測器資料: $sensor', color: Colors.orange);
         setState(() => _isAnalyzing = false);
         return;
       }
-      int firstTs = _rawBuffers[sensor]!.first.timestamp;
-      int lastTs = _rawBuffers[sensor]!.last.timestamp;
-      if (firstTs > maxStartTime) maxStartTime = firstTs;
-      if (minEndTime == -1 || lastTs < minEndTime) minEndTime = lastTs;
+      int startTs = _rawBuffers[sensor]!.first.timestamp;
+      int endTs = _rawBuffers[sensor]!.last.timestamp;
+
+      if (startTs > maxStartTimeUs) maxStartTimeUs = startTs;
+      if (endTs < minEndTimeUs) minEndTimeUs = endTs;
     }
 
-    double totalDurationMs = (minEndTime - maxStartTime).toDouble();
+    // 換算成毫秒檢查長度
+    double totalDurationMs = (minEndTimeUs - maxStartTimeUs) / 1000.0;
     if (totalDurationMs < 2000) {
-      _showTopSnackBar('⚠️ 錄製時間過短 (不足 2 秒)', color: Colors.orange);
+      _showTopSnackBar('⚠️ 重疊錄製時間過短 (不足 2 秒)，可能是有感測器太晚連上', color: Colors.orange);
       setState(() => _isAnalyzing = false);
       return;
     }
 
-    // 2. 建立 Pipeline 引擎並初始化
     final pipeline = RehabPipeline();
     pipeline.initPipeline();
 
-    // 3. 以 60Hz 重新對齊，並直接一筆一筆「餵給」 Pipeline
-    double interval = 1000.0 / 60.0; // 60Hz
-    int totalPoints = (totalDurationMs / interval).floor();
-    List<double>? lastValidFrame;
+    // 2. 以 60Hz 重新採樣 (間距 16666.66 微秒)
+    double intervalUs = 1000000.0 / 60.0;
+    int totalFrames = ((minEndTimeUs - maxStartTimeUs) / intervalUs).floor();
 
-    for (int i = 0; i < totalPoints; i++) {
-      double targetT = maxStartTime + (i * interval);
-      List<double>? frame = DataProcessor.extractSingleFrame50Axes(_rawBuffers, targetT);
+    Map<String, int> searchIndices = { for (var s in orderedSensors) s: 0 };
 
-      if (frame != null) {
-        lastValidFrame = frame;
-        pipeline.feedData(frame);
-      } else if (lastValidFrame != null) {
-        pipeline.feedData(lastValidFrame);
+    // 💡 設立 ZOH 的極限容忍時間 (20 毫秒 = 20,000 微秒)
+    const double zohThresholdUs = 20000.0;
+
+    for (int frame = 0; frame < totalFrames; frame++) {
+      // 每一幀的目標時間，是從最晚抵達的那顆感測器開始算
+      double targetTimeUs = maxStartTimeUs + (frame * intervalUs);
+      List<double> currentFrame50Axes = [];
+
+      for (String sensor in orderedSensors) {
+        var buffer = _rawBuffers[sensor]!;
+        int idx = searchIndices[sensor]!;
+
+        // 🧠 找到目標時間落在哪兩個資料點之間
+        while (idx < buffer.length - 1) {
+          if (buffer[idx + 1].timestamp <= targetTimeUs) {
+            idx++;
+          } else {
+            break;
+          }
+        }
+        searchIndices[sensor] = idx;
+
+        RawSensorPoint p1 = buffer[idx];
+
+        // 邊界防呆：如果已經是陣列最後一筆，無法內插，強制使用 ZOH
+        if (idx == buffer.length - 1) {
+          currentFrame50Axes.addAll(p1.values);
+          continue;
+        }
+
+        RawSensorPoint p2 = buffer[idx + 1];
+
+        // 計算目標時間距離「前一點」有多久
+        double timeSinceP1Us = targetTimeUs - p1.timestamp;
+
+        // 🌟 條件式混合判定：ZOH 還是 Linear Interpolation？
+        if (timeSinceP1Us <= zohThresholdUs) {
+          // 🟢 狀況 A：距離前一點很近 (< 20ms)，直接使用 ZOH
+          currentFrame50Axes.addAll(p1.values);
+        } else {
+          // 🔴 狀況 B：掉封包，缺口過大，啟動線性內插
+          double timeGapUs = (p2.timestamp - p1.timestamp).toDouble();
+
+          // 防呆：避免除以零，並將比例限制在 0.0 ~ 1.0 之間
+          double ratio = timeGapUs > 0 ? (timeSinceP1Us / timeGapUs) : 0.0;
+          ratio = ratio.clamp(0.0, 1.0);
+
+          // 對 10 個軸分別拉直線推算數值
+          for (int v = 0; v < 10; v++) {
+            double val1 = p1.values[v];
+            double val2 = p2.values[v];
+            double interpolatedVal = val1 + ((val2 - val1) * ratio);
+            currentFrame50Axes.add(interpolatedVal);
+          }
+        }
       }
+
+      // 湊滿 50 軸，確保資料結構完整後再餵給 AI
+      if (currentFrame50Axes.length == 50) {
+        pipeline.feedData(currentFrame50Axes);
+      }
+
+      if (frame % 60 == 0) await Future.delayed(Duration.zero);
     }
 
-    // 4. 所有資料餵完了，請 Pipeline 生成最終報告
-    _showTopSnackBar('⏳ 分析中，請稍候...');
+    _showTopSnackBar('🧠 AI 模型推論中...');
+    await Future.delayed(const Duration(milliseconds: 100));
+
     _finalReport = await pipeline.finishAndGenerateReport(widget.userId, _formattedTime);
 
     setState(() => _isAnalyzing = false);
     _showTopSnackBar('✅ 分析完成！');
   }
 
-// 🌟 終極版：相對時間對齊 + 60Hz 零階保持重採樣 + 橫向寬格式
+  // 貼上新的 _exportCSV
   Future<void> _exportCSV() async {
     _showTopSnackBar('⏳ 正在執行相對時間對齊與重採樣...');
     await Future.delayed(const Duration(milliseconds: 100)); // 防 ANR
@@ -407,16 +448,22 @@ class _RecordPageState extends State<RecordPage> {
       final converter = const ListToCsvConverter();
       String csvString = converter.convert(csvData);
 
+      // 4. 取得手機暫存資料夾路徑
       final directory = await getTemporaryDirectory();
+
+      // 產生帶有時間戳記的檔名，避免覆蓋
       final now = DateTime.now();
       final fileName = 'aligned_relative_${now.hour}${now.minute}${now.second}.csv';
       final String filePath = '${directory.path}/$fileName';
 
+      // 5. 將字串寫入實體檔案
       final File file = File(filePath);
       await file.writeAsString(csvString);
       await Share.shareXFiles([XFile(filePath)], text: '相對時間對齊版：60Hz 橫向感測器資料');
 
-      _showTopSnackBar('✅ 成功匯出相對時間對齊版 CSV！', color: Colors.blue);
+      await Share.shareXFiles([XFile(filePath)], text: '這是我剛剛錄製的感測器資料');
+
+      _showTopSnackBar('✅ 成功產生檔案！請選擇傳送方式。', color: Colors.blue);
 
     } catch (e) {
       print("❌ 匯出 CSV 失敗: $e");
@@ -426,7 +473,7 @@ class _RecordPageState extends State<RecordPage> {
 
   void _deleteData() {
     setState(() { _currentState = RecordState.initial; _recordingSeconds = 0; });
-    _showTopSnackBar('🗑️ 資料已刪除，請重新校正', color: Colors.redAccent);
+    _showTopSnackBar('🗑️ 資料已刪除，準備重新錄製', color: Colors.redAccent);
   }
 
   void _showAnalysisDialog() {
@@ -442,14 +489,23 @@ class _RecordPageState extends State<RecordPage> {
 
   String get _statusText {
     switch (_currentState) {
-      case RecordState.initial: return '準備錄製';
-      case RecordState.calibrated: return '已校正，準備就緒';
+      case RecordState.initial: return '受試者準備中'; // 💡 新增的初始文字
+      case RecordState.ready: return '準備就緒，可開始錄製';
       case RecordState.recording: return '錄製中...';
       case RecordState.completed: return '錄製完成';
     }
   }
 
-  Color get _statusColor => _currentState == RecordState.recording ? Colors.red.shade600 : const Color(0xFF0D9488);
+  Color get _statusColor {
+    switch (_currentState) {
+      case RecordState.recording:
+        return Colors.red.shade600;
+      case RecordState.ready:
+        return Colors.orange.shade600; // 💡 準備狀態給予橘色提示
+      default:
+        return const Color(0xFF0D9488);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -530,25 +586,75 @@ class _RecordPageState extends State<RecordPage> {
   Widget _buildControlButtons() {
     switch (_currentState) {
       case RecordState.initial:
-        return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(onPressed: _calibrate, icon: const Icon(Icons.explore), label: const Text('校正基準')));
-      case RecordState.calibrated:
-        return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white), onPressed: _startRecording, icon: const Icon(Icons.play_arrow_rounded), label: const Text('開始錄製')));
+      // 💡 階段 1：防誤觸按鈕 (點擊後只改變狀態，不錄資料)
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade500,
+                  foregroundColor: Colors.white,
+                  elevation: 0, // 扁平化一點，看起來像等待解鎖
+                ),
+                onPressed: _prepareToRecord,
+                icon: const Icon(Icons.pan_tool_rounded, size: 20),
+                label: const Text('準備錄製', style: TextStyle(fontWeight: FontWeight.bold))
+            )
+        );
+
+      case RecordState.ready:
+      // 💡 階段 2：真正的開始錄製按鈕
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D9488),
+                    foregroundColor: Colors.white
+                ),
+                onPressed: _startRecording,
+                icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                label: const Text('開始錄製', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+            )
+        );
+
       case RecordState.recording:
-        return SizedBox(width: 200, height: 48, child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade500, foregroundColor: Colors.white), onPressed: _stopRecording, icon: const Icon(Icons.stop_rounded), label: const Text('停止錄製')));
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade500,
+                    foregroundColor: Colors.white
+                ),
+                onPressed: _stopRecording,
+                icon: const Icon(Icons.stop_rounded, size: 22),
+                label: const Text('停止錄製', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+            )
+        );
+
       case RecordState.completed:
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            OutlinedButton.icon(onPressed: _deleteData, icon: const Icon(Icons.delete_outline, size: 18), label: const Text('刪除')),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(onPressed: _exportCSV, icon: const Icon(Icons.download_rounded, size: 18), label: const Text('匯出')),
+            OutlinedButton.icon(
+                onPressed: _deleteData,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('刪除')
+            ),
             const SizedBox(width: 8),
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488), foregroundColor: Colors.white),
+                onPressed: _exportCSV,
+                icon: const Icon(Icons.download_rounded, size: 18),
+                label: const Text('匯出')
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                  foregroundColor: Colors.white
+              ),
               onPressed: _isAnalyzing ? null : _showAnalysisDialog,
-              icon: _isAnalyzing 
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.analytics_outlined, size: 18),
+              icon: _isAnalyzing
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.analytics_outlined, size: 18),
               label: Text(_isAnalyzing ? '分析中...' : '分析'),
             ),
           ],
