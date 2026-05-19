@@ -86,13 +86,28 @@ class NativeService {
   void init() {
     if (_isInitialized) return;
     try {
-      final dylib1 = Platform.isAndroid ? ffi.DynamicLibrary.open("libnative_l1.so") : ffi.DynamicLibrary.process();
-      _resetL1 = dylib1.lookupFunction<ResetNative, ResetDart>("reset_l1");
-      _predictL1 = dylib1.lookupFunction<RunL1Native, RunL1Dart>("run_l1");
+      if (Platform.isAndroid) {
+        // --- Android 端：分開載入兩個 .so 檔案 ---
+        final dylib1 = ffi.DynamicLibrary.open("libnative_l1.so");
+        _resetL1 = dylib1.lookupFunction<ResetNative, ResetDart>("reset_l1");
+        _predictL1 = dylib1.lookupFunction<RunL1Native, RunL1Dart>("run_l1");
 
-      final dylib2 = Platform.isAndroid ? ffi.DynamicLibrary.open("libnative_l2.so") : ffi.DynamicLibrary.process();
-      _resetL2 = dylib2.lookupFunction<ResetNative, ResetDart>("reset_l2");
-      _predictL2 = dylib2.lookupFunction<RunL2Native, RunL2Dart>("run_l2");
+        final dylib2 = ffi.DynamicLibrary.open("libnative_l2.so");
+        _resetL2 = dylib2.lookupFunction<ResetNative, ResetDart>("reset_l2");
+        _predictL2 = dylib2.lookupFunction<RunL2Native, RunL2Dart>("run_l2");
+      }
+      else if (Platform.isIOS) {
+        // --- iOS 端：直接從主程序 (process) 中尋找對應的函式符號 ---
+        final iosLib = ffi.DynamicLibrary.process();
+
+        // 💡 雖然在 Android 是兩個檔案，但在 iOS 他們都在同一個 process 裡！
+        _resetL1 = iosLib.lookupFunction<ResetNative, ResetDart>("reset_l1");
+        _predictL1 = iosLib.lookupFunction<RunL1Native, RunL1Dart>("run_l1");
+        _resetL2 = iosLib.lookupFunction<ResetNative, ResetDart>("reset_l2");
+        _predictL2 = iosLib.lookupFunction<RunL2Native, RunL2Dart>("run_l2");
+
+        print("✅ iOS C++ 模型符號連結成功！");
+      }
 
       _isInitialized = true;
       print("✅ C++ 模型載入成功！");

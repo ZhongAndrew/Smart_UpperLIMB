@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -16,6 +16,11 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		B0EF73AC2FBB306B00B74A9D /* bridge_features.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B0EF73A92FBB306B00B74A9D /* bridge_features.cpp */; };
+		B0EF73AD2FBB306B00B74A9D /* bridge_l1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B0EF73AA2FBB306B00B74A9D /* bridge_l1.cpp */; };
+		B0EF73AE2FBB306B00B74A9D /* bridge_l2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B0EF73AB2FBB306B00B74A9D /* bridge_l2.cpp */; };
+		B0EF75832FBB3A8F00B74A9D /* MovellaDotSdk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B0EF75812FBB3A6D00B74A9D /* MovellaDotSdk.framework */; };
+		B0EF75842FBB3A8F00B74A9D /* MovellaDotSdk.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B0EF75812FBB3A6D00B74A9D /* MovellaDotSdk.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B896238C6E688418C063D308 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6EF72DC7D63264959FA4C40 /* Pods_RunnerTests.framework */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +41,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				B0EF75842FBB3A8F00B74A9D /* MovellaDotSdk.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -64,15 +70,103 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2AD1B53E92DFBF046EB713B /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		A524703259538D3D64789829 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		B0EF73A92FBB306B00B74A9D /* bridge_features.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = bridge_features.cpp; sourceTree = "<group>"; };
+		B0EF73AA2FBB306B00B74A9D /* bridge_l1.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = bridge_l1.cpp; sourceTree = "<group>"; };
+		B0EF73AB2FBB306B00B74A9D /* bridge_l2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = bridge_l2.cpp; sourceTree = "<group>"; };
+		B0EF75812FBB3A6D00B74A9D /* MovellaDotSdk.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MovellaDotSdk.framework; sourceTree = "<group>"; };
 		C043DF1297D820A5BBD27CD8 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		D6EF72DC7D63264959FA4C40 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F55D19F0B0C998A65E765E9D /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B0EF6BAC2FBB2A2500B74A9D /* Exceptions for "model_layer2" folder in "Runner" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"_clang-format",
+				buildInfo.mat,
+				codedescriptor.dmr,
+				codeInfo.mat,
+				CompactClassificationEnsemble.obj,
+				CompactClassificationTree.obj,
+				compileInfo.mat,
+				minOrMax.obj,
+				predictOneWithCache.obj,
+				rtw_proj.tmw,
+				setup_msvc.bat,
+				updateCache.obj,
+			);
+			target = 97C146ED1CF9000F007C117D /* Runner */;
+		};
+		B0EF6BAD2FBB2A2500B74A9D /* Exceptions for "feature_extractor" folder in "Runner" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"_clang-format",
+				buildInfo.mat,
+				codedescriptor.dmr,
+				codeInfo.mat,
+				compileInfo.mat,
+				minOrMax.obj,
+				rtw_proj.tmw,
+				setup_msvc.bat,
+			);
+			target = 97C146ED1CF9000F007C117D /* Runner */;
+		};
+		B0EF6BAE2FBB2A3800B74A9D /* Exceptions for "model_layer1" folder in "Runner" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"_clang-format",
+				buildInfo.mat,
+				codedescriptor.dmr,
+				codeInfo.mat,
+				CompactClassificationEnsemble.obj,
+				CompactClassificationTree.obj,
+				compileInfo.mat,
+				rtw_proj.tmw,
+				setup_msvc.bat,
+				updateCache.obj,
+			);
+			target = 97C146ED1CF9000F007C117D /* Runner */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B0E9AFCC2FB30E2A0026B897 /* model_layer1 */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = model_layer1; sourceTree = "<group>"; };
-		B0E9B0272FB30E3A0026B897 /* model_layer2 */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = model_layer2; sourceTree = "<group>"; };
-		B0E9B0922FB30E430026B897 /* feature_extractor */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = feature_extractor; sourceTree = "<group>"; };
+		B0E9AFCC2FB30E2A0026B897 /* model_layer1 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B0EF6BAE2FBB2A3800B74A9D /* Exceptions for "model_layer1" folder in "Runner" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = model_layer1;
+			sourceTree = "<group>";
+		};
+		B0E9B0272FB30E3A0026B897 /* model_layer2 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B0EF6BAC2FBB2A2500B74A9D /* Exceptions for "model_layer2" folder in "Runner" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = model_layer2;
+			sourceTree = "<group>";
+		};
+		B0E9B0922FB30E430026B897 /* feature_extractor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B0EF6BAD2FBB2A2500B74A9D /* Exceptions for "feature_extractor" folder in "Runner" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = feature_extractor;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +174,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B0EF75832FBB3A8F00B74A9D /* MovellaDotSdk.framework in Frameworks */,
 				8C565106E704F1E5E3ADCDEE /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -171,6 +266,9 @@
 				B0E9AFCC2FB30E2A0026B897 /* model_layer1 */,
 				B0E9B0272FB30E3A0026B897 /* model_layer2 */,
 				B0E9B0922FB30E430026B897 /* feature_extractor */,
+				B0EF73A92FBB306B00B74A9D /* bridge_features.cpp */,
+				B0EF73AA2FBB306B00B74A9D /* bridge_l1.cpp */,
+				B0EF73AB2FBB306B00B74A9D /* bridge_l2.cpp */,
 			);
 			path = cpp_model;
 			sourceTree = "<group>";
@@ -180,6 +278,7 @@
 			children = (
 				F55D19F0B0C998A65E765E9D /* Pods_Runner.framework */,
 				D6EF72DC7D63264959FA4C40 /* Pods_RunnerTests.framework */,
+				B0EF75812FBB3A6D00B74A9D /* MovellaDotSdk.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -302,13 +401,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -406,6 +501,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				B0EF73AC2FBB306B00B74A9D /* bridge_features.cpp in Sources */,
+				B0EF73AD2FBB306B00B74A9D /* bridge_l1.cpp in Sources */,
+				B0EF73AE2FBB306B00B74A9D /* bridge_l2.cpp in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 			);
@@ -501,8 +599,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 978R2WMM9C;
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = 663L9S5JD2;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/**",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -516,6 +619,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.smartRehabPro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = debugging;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -692,8 +797,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 978R2WMM9C;
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = 663L9S5JD2;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/**",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -707,6 +817,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.smartRehabPro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = debugging;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -721,8 +833,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = 978R2WMM9C;
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = 663L9S5JD2;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/**",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -736,6 +853,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.smartRehabPro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = debugging;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";

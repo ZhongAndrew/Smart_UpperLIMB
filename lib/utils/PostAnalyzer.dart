@@ -349,6 +349,7 @@ class ShoulderAnalyzer {
           peakIndex = idx;
         }
       }
+      
 
       // 2. 檢查在最高點時，手肘有沒有彎曲 (代償守門員)
       double elbowAtPeak = elbowAngles[peakIndex];
