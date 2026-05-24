@@ -153,7 +153,14 @@ class _MainSystemState extends State<MainSystem> {
         onSwitchTab: switchTab,
         onAnalysisCompleted: _handleAnalysisCompleted,
       ),
-      AnalysisPage(hasData: _currentReport != null, reportData: _currentReport, userName: widget.userName, onSwitchTab: switchTab, onReportSaved: _saveReport),
+      AnalysisPage(
+          hasData: _currentReport != null,
+          reportData: _currentReport,
+          userName: widget.userName,
+          isGuest: widget.isGuest,
+          onSwitchTab: switchTab,
+          onReportSaved: _saveReport
+      ),
       HistoryPage(
           userId: widget.userId,
           isGuest: widget.isGuest,

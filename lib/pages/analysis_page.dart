@@ -5,7 +5,8 @@ import '../widgets/rom_bar_chart.dart';
 class AnalysisPage extends StatefulWidget {
   final bool hasData;
   final AssessmentReport? reportData;
-  final String userName; // 接收使用者名稱
+  final String userName;
+  final bool isGuest; // 💡 1. 新增這行：接收是否為訪客的狀態
   final Function(int) onSwitchTab;
   final Function(AssessmentReport) onReportSaved;
 
@@ -14,6 +15,7 @@ class AnalysisPage extends StatefulWidget {
     required this.hasData,
     this.reportData,
     required this.userName,
+    required this.isGuest, // 💡 2. 構造函數加入 required this.isGuest
     required this.onSwitchTab,
     required this.onReportSaved,
   });
@@ -84,7 +86,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
             _buildSummaryCard(),
             const SizedBox(height: 24),
 
-            // 視覺化橫向長條圖與詳細數據 (交給獨立組件)
+            // 視覺化橫向長條圖與詳細數據
             RomComparisonChart(
               results: widget.reportData!.results,
               targetExercises: _targetExercises,
@@ -92,23 +94,25 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
             const SizedBox(height: 24),
 
-            // 底部：儲存紀錄按鈕
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D9488),
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(), // 統一改為膠囊形狀
-                  elevation: 0,
+            // 💡 3. 重點邏輯：只有「不是訪客 (!widget.isGuest)」的時候，才顯示儲存紀錄按鈕
+            if (!widget.isGuest) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D9488),
+                    foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    elevation: 0,
+                  ),
+                  onPressed: () => widget.onReportSaved(widget.reportData!),
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text('儲存本次報告', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
-                onPressed: () => widget.onReportSaved(widget.reportData!),
-                icon: const Icon(Icons.save_rounded),
-                label: const Text('儲存本次報告', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
+            ],
           ],
         ),
       ),
