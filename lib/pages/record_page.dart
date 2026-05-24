@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
-import 'dart:convert'; // 💡 新增
+import 'dart:convert';
 import '../models/app_models.dart';
 import '../services/rehab_pipeline.dart';
 import '../services/native_service.dart';
@@ -13,8 +13,8 @@ import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-// 💡 1. 移除了 calibrated 狀態，讓流程更簡潔
-enum RecordState { initial, ready, recording, completed }
+// 💡 1. 補回 calibrating 狀態
+enum RecordState { initial, ready, calibrating, recording, completed }
 
 class RecordPage extends StatefulWidget {
   final List<Sensor> sensors;
@@ -41,17 +41,17 @@ class _RecordPageState extends State<RecordPage> {
   // 記錄每顆感測器的 internal time 與手機 system time 的時間差 (以微秒為單位)
   final Map<String, int> _timeOffsets = {};
 
-  // 在 _RecordPageState 類別內新增：
+  // 💡 [新增] 儲存 5 顆感測器校正期間的時間誤差
+  final Map<String, List<int>> _calibrationOffsets = {
+    "LFA": [], "RFA": [], "LA": [], "RA": [], "W": []
+  };
+  // 💡 [新增] 設定要收集的樣本數 (60Hz * 2秒 = 120包)
+  final int _targetCalibrationSamples = 120;
+
   final Map<String, List<RawSensorPoint>> _rawBuffers = {
-    "LFA": [],
-    "RFA": [],
-    "LA": [],
-    "RA": [],
-    "W": [],
+    "LFA": [], "RFA": [], "LA": [], "RA": [], "W": [],
   };
 
-// 為了避免記憶體無限膨脹，我們設定一個最大暫存量 (例如 5 秒鐘的資料)
-// 60Hz * 5秒 = 300 筆
   final int _maxBufferSize = 300;
   final PageController _pageController = PageController(viewportFraction: 0.9);
 
@@ -64,8 +64,8 @@ class _RecordPageState extends State<RecordPage> {
   int _currentSensorIndex = 0;
   RecordState _currentState = RecordState.initial;
   int _recordingSeconds = 0;
-  bool _isAnalyzing = false; // 💡 新增：分析中的狀態
-  AssessmentReport? _finalReport; // 💡 新增：儲存分析後的真實報告
+  bool _isAnalyzing = false;
+  AssessmentReport? _finalReport;
 
   Timer? _recordingTimer;
   Timer? _aiSampleTimer;
@@ -73,17 +73,14 @@ class _RecordPageState extends State<RecordPage> {
   final List<String> orderedSensors = ["LFA", "RFA", "LA", "RA", "W"];
 
   final Map<String, double> _latestSensorData = {};
-
   final int _maxDataPoints = 100;
 
-  // 💡 絕對通道：以 LFA, RFA 等標籤作為通道，不再依賴 MAC 避免大小寫串線
   final Map<String, List<double>> _accX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _accY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _accZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _gyrZ = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
-// 💡 [新增] 四元數的畫圖陣列
   final Map<String, List<double>> _quatW = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _quatX = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
   final Map<String, List<double>> _quatY = {"LFA": [], "RFA": [], "LA": [], "RA": [], "W": []};
@@ -101,24 +98,35 @@ class _RecordPageState extends State<RecordPage> {
         String prefix = data['sensorId']?.toString() ?? "W";
 
         if (orderedSensors.contains(prefix)) {
-          // 💡 取得手機當下的系統時間 (微秒) 作為絕對標準
           int currentHostTimeUs = DateTime.now().microsecondsSinceEpoch;
           int sensorTsUs = data['timestamp'] ?? 0;
 
-          // 🚨 只有在錄製狀態時，才進行時間錨定 (避免收到錄製前的髒資料)
-          if (_currentState == RecordState.recording) {
-            // 如果這顆感測器是按下錄製後「第一次」抵達，計算它的專屬 Offset
-            if (!_timeOffsets.containsKey(prefix)) {
-              _timeOffsets[prefix] = currentHostTimeUs - sensorTsUs;
+          // ==========================================
+          // 🌟 階段 A：如果是「校正中」，偷偷收集時間誤差
+          // ==========================================
+          if (_currentState == RecordState.calibrating) {
+            if (_calibrationOffsets[prefix]!.length < _targetCalibrationSamples) {
+              _calibrationOffsets[prefix]!.add(currentHostTimeUs - sensorTsUs);
             }
+
+            // 檢查是不是 5 顆感測器都收集滿 120 包了？
+            bool isAllCalibrated = orderedSensors.every(
+                    (s) => _calibrationOffsets[s]!.length >= _targetCalibrationSamples
+            );
+
+            if (isAllCalibrated) {
+              _finishCalibrationAndStartRecording();
+            }
+            return; // 校正期間，提早結束，不畫圖也不存進 _rawBuffers
           }
 
-          // 🌟 換算成對齊後的全球統一時間 (如果還沒開始錄製，就先用原本的)
+          // ==========================================
+          // 🌟 階段 B：如果是「錄製中」或一般狀態
+          // ==========================================
           int alignedTsUs = _timeOffsets.containsKey(prefix)
               ? sensorTsUs + _timeOffsets[prefix]!
               : sensorTsUs;
 
-          // 1. 統一解析 10 軸資料與時間戳
           double aX = _parseDouble(data['accX']);
           double aY = _parseDouble(data['accY']);
           double aZ = _parseDouble(data['accZ']);
@@ -130,20 +138,15 @@ class _RecordPageState extends State<RecordPage> {
           double qY = _parseDouble(data['quatY'] ?? 0.0);
           double qZ = _parseDouble(data['quatZ'] ?? 0.0);
 
-          // 2. 存入 AI 需要的最新 5 條時間軸 Buffer
           List<double> vals = [aX, aY, aZ, gX, gY, gZ, qW, qX, qY, qZ];
-          // 💡 注意：這裡存入的 timestamp 已經替換成校正後的 alignedTsUs
           _rawBuffers[prefix]!.add(RawSensorPoint(timestamp: alignedTsUs, values: vals));
 
-          // 💡 修正：只有在「非錄製狀態」才限制 300 筆 (為了讓波形圖能動)。
-          // 只要進入錄製狀態，就讓它無限收集整段復健資料！
           if (_currentState != RecordState.recording) {
             if (_rawBuffers[prefix]!.length > _maxBufferSize) {
               _rawBuffers[prefix]!.removeAt(0);
             }
           }
 
-          // 3. 處理 UI 畫圖陣列 (保留你原本更新波形圖的功能)
           if (mounted) {
             _accX[prefix]!.add(aX); _accY[prefix]!.add(aY); _accZ[prefix]!.add(aZ);
             _gyrX[prefix]!.add(gX); _gyrY[prefix]!.add(gY); _gyrZ[prefix]!.add(gZ);
@@ -179,12 +182,11 @@ class _RecordPageState extends State<RecordPage> {
 
   String _getPrefixFromMac(String mac) {
     switch (mac.toUpperCase()) {
-    // 💡 替換成你真實感測器的 MAC (需跟 Kotlin 那邊一模一樣)
-      case "D4:22:CD:00:7D:2D": return "LFA"; // 替換這裡
-      case "D4:22:CD:00:7E:FD": return "RFA"; // 替換這裡
-      case "D4:22:CD:00:7E:A6": return "LA";  // 替換這裡
-      case "D4:22:CD:00:7C:AA": return "RA";  // 替換這裡
-      case "D4:22:CD:00:7A:28": return "W";   // 替換這裡
+      case "D4:22:CD:00:7D:2D": return "LFA";
+      case "D4:22:CD:00:7E:FD": return "RFA";
+      case "D4:22:CD:00:7E:A6": return "LA";
+      case "D4:22:CD:00:7C:AA": return "RA";
+      case "D4:22:CD:00:7A:28": return "W";
       default: return "W";
     }
   }
@@ -218,25 +220,51 @@ class _RecordPageState extends State<RecordPage> {
     overlay.insert(entry);
     Future.delayed(const Duration(seconds: 3), () { if (entry.mounted) entry.remove(); });
   }
-// 💡 新增：解除防誤觸鎖定，進入可錄製狀態
+
   void _prepareToRecord() {
     setState(() {
       _currentState = RecordState.ready;
     });
   }
-  void _startRecording() {
+
+  // 💡 [新增] 取代原本的 _startRecording，改為先進入校正
+  void _startCalibration() {
     setState(() {
-      _currentState = RecordState.recording;
+      _currentState = RecordState.calibrating;
       _recordingSeconds = 0;
 
+      // 清空先前的校正與錄製資料
+      _timeOffsets.clear();
+      for (String sensor in orderedSensors) {
+        _calibrationOffsets[sensor]!.clear();
+        _rawBuffers[sensor]!.clear();
+      }
+    });
+
+    _showTopSnackBar('⏳ 靜止校正中，請保持姿勢不動...', color: Colors.orange);
+  }
+
+  // 💡 [新增] 120包收集完畢後，計算平均並正式開錄
+  void _finishCalibrationAndStartRecording() {
+    for (String sensor in orderedSensors) {
+      List<int> offsets = _calibrationOffsets[sensor]!;
+      if (offsets.isNotEmpty) {
+        double averageOffset = offsets.reduce((a, b) => a + b) / offsets.length;
+        _timeOffsets[sensor] = averageOffset.round();
+      }
+    }
+
+    setState(() {
+      _currentState = RecordState.recording;
       for (String sensor in orderedSensors) {
         _rawBuffers[sensor]!.clear();
       }
-      _timeOffsets.clear(); // 💡 新增這行：確保重新計算時間錨點
     });
 
+    _showTopSnackBar('✅ 校正完成！開始正式錄製', color: const Color(0xFF0D9488));
+
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if(mounted) setState(() => _recordingSeconds++);
+      if (mounted) setState(() => _recordingSeconds++);
     });
   }
 
@@ -250,9 +278,8 @@ class _RecordPageState extends State<RecordPage> {
     _showTopSnackBar('⏳ 準備資料與分析中，請稍候...');
     await Future.delayed(const Duration(milliseconds: 100));
 
-    // 1. 找出 5 顆感測器的「完美重疊時間區間」(交集)
-    int maxStartTimeUs = 0; // 最晚進來的第一筆資料
-    int minEndTimeUs = 9223372036854775807; // dart integer max
+    int maxStartTimeUs = 0;
+    int minEndTimeUs = 9223372036854775807;
 
     for (String sensor in orderedSensors) {
       if (_rawBuffers[sensor]!.isEmpty) {
@@ -267,10 +294,9 @@ class _RecordPageState extends State<RecordPage> {
       if (endTs < minEndTimeUs) minEndTimeUs = endTs;
     }
 
-    // 換算成毫秒檢查長度
     double totalDurationMs = (minEndTimeUs - maxStartTimeUs) / 1000.0;
     if (totalDurationMs < 2000) {
-      _showTopSnackBar('⚠️ 重疊錄製時間過短 (不足 2 秒)，可能是有感測器太晚連上', color: Colors.orange);
+      _showTopSnackBar('⚠️ 重疊錄製時間過短 (不足 2 秒)', color: Colors.orange);
       setState(() => _isAnalyzing = false);
       return;
     }
@@ -278,17 +304,12 @@ class _RecordPageState extends State<RecordPage> {
     final pipeline = RehabPipeline();
     pipeline.initPipeline();
 
-    // 2. 以 60Hz 重新採樣 (間距 16666.66 微秒)
     double intervalUs = 1000000.0 / 60.0;
     int totalFrames = ((minEndTimeUs - maxStartTimeUs) / intervalUs).floor();
-
     Map<String, int> searchIndices = { for (var s in orderedSensors) s: 0 };
-
-    // 💡 設立 ZOH 的極限容忍時間 (20 毫秒 = 20,000 微秒)
     const double zohThresholdUs = 20000.0;
 
     for (int frame = 0; frame < totalFrames; frame++) {
-      // 每一幀的目標時間，是從最晚抵達的那顆感測器開始算
       double targetTimeUs = maxStartTimeUs + (frame * intervalUs);
       List<double> currentFrame50Axes = [];
 
@@ -296,7 +317,6 @@ class _RecordPageState extends State<RecordPage> {
         var buffer = _rawBuffers[sensor]!;
         int idx = searchIndices[sensor]!;
 
-        // 🧠 找到目標時間落在哪兩個資料點之間
         while (idx < buffer.length - 1) {
           if (buffer[idx + 1].timestamp <= targetTimeUs) {
             idx++;
@@ -308,40 +328,29 @@ class _RecordPageState extends State<RecordPage> {
 
         RawSensorPoint p1 = buffer[idx];
 
-        // 邊界防呆：如果已經是陣列最後一筆，無法內插，強制使用 ZOH
         if (idx == buffer.length - 1) {
           currentFrame50Axes.addAll(p1.values);
           continue;
         }
 
         RawSensorPoint p2 = buffer[idx + 1];
-
-        // 計算目標時間距離「前一點」有多久
         double timeSinceP1Us = targetTimeUs - p1.timestamp;
 
-        // 🌟 條件式混合判定：ZOH 還是 Linear Interpolation？
         if (timeSinceP1Us <= zohThresholdUs) {
-          // 🟢 狀況 A：距離前一點很近 (< 20ms)，直接使用 ZOH
           currentFrame50Axes.addAll(p1.values);
         } else {
-          // 🔴 狀況 B：掉封包，缺口過大，啟動線性內插
           double timeGapUs = (p2.timestamp - p1.timestamp).toDouble();
-
-          // 防呆：避免除以零，並將比例限制在 0.0 ~ 1.0 之間
           double ratio = timeGapUs > 0 ? (timeSinceP1Us / timeGapUs) : 0.0;
           ratio = ratio.clamp(0.0, 1.0);
 
-          // 對 10 個軸分別拉直線推算數值
           for (int v = 0; v < 10; v++) {
             double val1 = p1.values[v];
             double val2 = p2.values[v];
-            double interpolatedVal = val1 + ((val2 - val1) * ratio);
-            currentFrame50Axes.add(interpolatedVal);
+            currentFrame50Axes.add(val1 + ((val2 - val1) * ratio));
           }
         }
       }
 
-      // 湊滿 50 軸，確保資料結構完整後再餵給 AI
       if (currentFrame50Axes.length == 50) {
         pipeline.feedData(currentFrame50Axes);
       }
@@ -358,21 +367,17 @@ class _RecordPageState extends State<RecordPage> {
     _showTopSnackBar('✅ 分析完成！');
   }
 
-  // 貼上新的 _exportCSV
   Future<void> _exportCSV() async {
     _showTopSnackBar('⏳ 正在執行相對時間對齊與重採樣...');
-    await Future.delayed(const Duration(milliseconds: 100)); // 防 ANR
+    await Future.delayed(const Duration(milliseconds: 100));
 
     try {
-      // 1. 防呆：確保 5 顆感測器都有收到資料
       List<String> missingSensors = orderedSensors.where((s) => (_rawBuffers[s] ?? []).isEmpty).toList();
       if (missingSensors.isNotEmpty) {
         _showTopSnackBar('⚠️ 缺少感測器資料: ${missingSensors.join(", ")}', color: Colors.orange);
         return;
       }
 
-      // 2. 建立「相對時間」的基準點
-      // 自動判斷時間戳單位：看看第一筆和第二筆的差值，如果是 16000 左右就是微秒，16 左右就是毫秒
       int sampleDelta = _rawBuffers[orderedSensors.first]![1].timestamp - _rawBuffers[orderedSensors.first]![0].timestamp;
       double timeScale = (sampleDelta > 1000) ? 1000.0 : 1.0;
 
@@ -382,7 +387,7 @@ class _RecordPageState extends State<RecordPage> {
       for (String sensor in orderedSensors) {
         int startTs = _rawBuffers[sensor]!.first.timestamp;
         int endTs = _rawBuffers[sensor]!.last.timestamp;
-        startTimes[sensor] = startTs; // 📌 記住每顆感測器自己的「第 0 秒」基準點
+        startTimes[sensor] = startTs;
 
         double durationMs = (endTs - startTs) / timeScale;
         if (durationMs < minDurationMs) minDurationMs = durationMs;
@@ -393,7 +398,6 @@ class _RecordPageState extends State<RecordPage> {
         return;
       }
 
-      // 3. 建立 51 欄的橫向標題列 (1 個相對時間 + 5顆 * 10軸)
       List<dynamic> headerRow = ['Time_ms'];
       for (String sensor in orderedSensors) {
         headerRow.addAll([
@@ -404,64 +408,46 @@ class _RecordPageState extends State<RecordPage> {
       }
       List<List<dynamic>> csvData = [headerRow];
 
-      // 4. 開始 60Hz 完美重採樣 (Re-sampling)
-      double intervalMs = 1000.0 / 60.0; // 每 16.666 毫秒切一刀
+      double intervalMs = 1000.0 / 60.0;
       int totalFrames = (minDurationMs / intervalMs).floor();
-
-      // 紀錄每顆感測器目前找到哪一筆了，加速搜尋
       Map<String, int> searchIndices = { for (var s in orderedSensors) s: 0 };
 
       for (int frame = 0; frame < totalFrames; frame++) {
-        double targetTimeMs = frame * intervalMs; // 虛擬的完美時鐘：0.00, 16.67, 33.33...
-        List<dynamic> rowData = [targetTimeMs.toStringAsFixed(2)]; // 第 1 欄寫入時間戳
+        double targetTimeMs = frame * intervalMs;
+        List<dynamic> rowData = [targetTimeMs.toStringAsFixed(2)];
 
-        // 🔄 橫向組裝 5 顆感測器
         for (String sensor in orderedSensors) {
           var buffer = _rawBuffers[sensor]!;
           int startTs = startTimes[sensor]!;
           int idx = searchIndices[sensor]!;
 
-          // 🧠 零階保持 (Zero-Order Hold) 邏輯：
-          // 向前找，直到感測器的「相對時間」超過我們的目標時間為止
           while (idx < buffer.length - 1) {
             double nextTimeMs = (buffer[idx + 1].timestamp - startTs) / timeScale;
             if (nextTimeMs <= targetTimeMs) {
-              idx++; // 繼續往前推進
+              idx++;
             } else {
-              break; // 找到了最接近 (且不超過) 目標時間的那一筆資料，停止推進
+              break;
             }
           }
-          searchIndices[sensor] = idx; // 存檔，下次從這裡繼續找
-
-          // 將這顆感測器沿用(保持)的 10 個值加到同一列 (橫向排過去)
+          searchIndices[sensor] = idx;
           rowData.addAll(buffer[idx].values);
         }
 
-        // 將這完美橫向對齊的 51 個數據寫入 CSV
         csvData.add(rowData);
-
-        // 防 ANR 暫停
         if (frame % 60 == 0) await Future.delayed(Duration.zero);
       }
 
-      // 5. 匯出 CSV 檔案
       final converter = const ListToCsvConverter();
       String csvString = converter.convert(csvData);
 
-      // 4. 取得手機暫存資料夾路徑
       final directory = await getTemporaryDirectory();
-
-      // 產生帶有時間戳記的檔名，避免覆蓋
       final now = DateTime.now();
       final fileName = 'aligned_relative_${now.hour}${now.minute}${now.second}.csv';
       final String filePath = '${directory.path}/$fileName';
 
-      // 5. 將字串寫入實體檔案
       final File file = File(filePath);
       await file.writeAsString(csvString);
       await Share.shareXFiles([XFile(filePath)], text: '相對時間對齊版：60Hz 橫向感測器資料');
-
-      await Share.shareXFiles([XFile(filePath)], text: '這是我剛剛錄製的感測器資料');
 
       _showTopSnackBar('✅ 成功產生檔案！請選擇傳送方式。', color: Colors.blue);
 
@@ -489,8 +475,9 @@ class _RecordPageState extends State<RecordPage> {
 
   String get _statusText {
     switch (_currentState) {
-      case RecordState.initial: return '受試者準備中'; // 💡 新增的初始文字
+      case RecordState.initial: return '受試者準備中';
       case RecordState.ready: return '準備就緒，可開始錄製';
+      case RecordState.calibrating: return '靜止校正中 (約2秒)...'; // 💡 新增文字
       case RecordState.recording: return '錄製中...';
       case RecordState.completed: return '錄製完成';
     }
@@ -498,12 +485,10 @@ class _RecordPageState extends State<RecordPage> {
 
   Color get _statusColor {
     switch (_currentState) {
-      case RecordState.recording:
-        return Colors.red.shade600;
-      case RecordState.ready:
-        return Colors.orange.shade600; // 💡 準備狀態給予橘色提示
-      default:
-        return const Color(0xFF0D9488);
+      case RecordState.recording: return Colors.red.shade600;
+      case RecordState.calibrating: return Colors.purple.shade600; // 💡 校正狀態專屬紫色
+      case RecordState.ready: return Colors.orange.shade600;
+      default: return const Color(0xFF0D9488);
     }
   }
 
@@ -586,14 +571,13 @@ class _RecordPageState extends State<RecordPage> {
   Widget _buildControlButtons() {
     switch (_currentState) {
       case RecordState.initial:
-      // 💡 階段 1：防誤觸按鈕 (點擊後只改變狀態，不錄資料)
         return SizedBox(
             width: 200, height: 48,
             child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade500,
                   foregroundColor: Colors.white,
-                  elevation: 0, // 扁平化一點，看起來像等待解鎖
+                  elevation: 0,
                 ),
                 onPressed: _prepareToRecord,
                 icon: const Icon(Icons.pan_tool_rounded, size: 20),
@@ -602,7 +586,7 @@ class _RecordPageState extends State<RecordPage> {
         );
 
       case RecordState.ready:
-      // 💡 階段 2：真正的開始錄製按鈕
+      // 💡 點擊後改為呼叫 _startCalibration
         return SizedBox(
             width: 200, height: 48,
             child: ElevatedButton.icon(
@@ -610,9 +594,24 @@ class _RecordPageState extends State<RecordPage> {
                     backgroundColor: const Color(0xFF0D9488),
                     foregroundColor: Colors.white
                 ),
-                onPressed: _startRecording,
+                onPressed: _startCalibration,
                 icon: const Icon(Icons.play_arrow_rounded, size: 22),
                 label: const Text('開始錄製', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+            )
+        );
+
+      case RecordState.calibrating:
+      // 💡 增加校正中的按鈕狀態，鎖定防點擊
+        return SizedBox(
+            width: 200, height: 48,
+            child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple.shade500,
+                    foregroundColor: Colors.white
+                ),
+                onPressed: null,
+                icon: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                label: const Text(' 校正對齊中...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
             )
         );
 
@@ -683,19 +682,17 @@ class _RecordPageState extends State<RecordPage> {
             ],
           ),
           const Divider(height: 16),
-          // 💡 [優化] 改用可滾動視窗，避免三個圖表擠在一起
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  // 💡 [優化] 加大圖表高度，讓波形更容易看清楚
                   _buildChartSection('加速度 (m/s²)', 'acc', prefix, -30, 30, height: 120),
                   const SizedBox(height: 16),
                   _buildChartSection('陀螺儀 (deg/s)', 'gyr', prefix, -400, 400, height: 120),
                   const SizedBox(height: 16),
                   _buildChartSection('四元數 (Quaternion)', 'quat', prefix, -1.0, 1.0, height: 140),
-                  const SizedBox(height: 20), // 底部留白
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -711,7 +708,6 @@ class _RecordPageState extends State<RecordPage> {
       children: [
         Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
         const SizedBox(height: 4),
-        // 💡 [優化] 給予固定的高度，而不是讓 Expanded 去擠壓
         Container(
           height: height,
           width: double.infinity,
@@ -721,7 +717,6 @@ class _RecordPageState extends State<RecordPage> {
             child: ValueListenableBuilder<int>(
               valueListenable: _chartTriggers[prefix] ?? ValueNotifier(0),
               builder: (context, _, __) {
-                // 🛡️ [修復] 防呆機制：確保陣列為空時，仍有全 0 的資料可以畫出基準線
                 List<double> fallbackData = List.filled(_maxDataPoints, 0.0);
 
                 return CustomPaint(
@@ -780,7 +775,6 @@ class _RecordPageState extends State<RecordPage> {
   }
 }
 
-// 💡 升級版的畫圖類別，支援 4 條線
 class _MultiLinePainter extends CustomPainter {
   final List<double> xData;
   final List<double> yData;
@@ -802,7 +796,6 @@ class _MultiLinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 🛡️ 防呆：如果畫布寬度或高度無效，提早跳出，避免 NaN 錯誤
     if (size.width <= 0 || size.height <= 0) return;
 
     final gridPaint = Paint()..color = Colors.grey.shade300..strokeWidth = 1;
@@ -813,7 +806,6 @@ class _MultiLinePainter extends CustomPainter {
       double yPos = size.height - ((val - minY) / (maxY - minY)) * size.height;
       if (yPos >= 0 && yPos <= size.height) {
         canvas.drawLine(Offset(0, yPos), Offset(size.width, yPos), gridPaint);
-        // 如果是小數點(如四元數)，保留一位小數；否則轉整數
         String labelText = maxY <= 1.0 ? val.toStringAsFixed(1) : val.toInt().toString();
         textPainter.text = TextSpan(text: labelText, style: TextStyle(color: Colors.grey.shade500, fontSize: 10));
         textPainter.layout();
@@ -822,12 +814,10 @@ class _MultiLinePainter extends CustomPainter {
       }
     }
 
-    // 畫出原本的 X, Y, Z
     _drawLine(canvas, size, xData, Colors.orange);
     _drawLine(canvas, size, yData, Colors.blue);
     _drawLine(canvas, size, zData, Colors.green);
 
-    // 💡 如果有傳入 wData，就多畫一條紫色的線
     if (wData != null && wData!.isNotEmpty) {
       _drawLine(canvas, size, wData!, Colors.purple);
     }
@@ -844,7 +834,6 @@ class _MultiLinePainter extends CustomPainter {
 
     final path = Path();
 
-    // 🛡️ 防呆：避免除以零
     final int dataCount = data.length > maxPoints ? maxPoints : data.length;
     if (dataCount <= 1) return;
 
@@ -858,7 +847,6 @@ class _MultiLinePainter extends CustomPainter {
       if (val.isNaN || val.isInfinite) val = 0.0;
 
       double y = size.height - ((val - minY) / (maxY - minY)) * size.height;
-      // 限制在畫布範圍外一點點，避免超出太多導致繪製異常
       y = y.clamp(-20.0, size.height + 20.0);
 
       if (!hasStarted) {
